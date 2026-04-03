@@ -6,6 +6,11 @@ import random
 DB_FILE = os.environ.get('DATABASE_PATH', 'khub.db')
 
 def _conn():
+    # Ensure the directory for the database file exists (crucial for Render Persistent Disks)
+    db_dir = os.path.dirname(DB_FILE)
+    if db_dir:
+        os.makedirs(db_dir, exist_ok=True)
+        
     conn = sqlite3.connect(DB_FILE, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     return conn
