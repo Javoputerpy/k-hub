@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+{% block page_title %}{{ t.tab_portfolio }}{% endblock %}
+{% block content %}
+
+<!-- Header with Action Button -->
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:32px;">
+    <p style="color:var(--text-muted); font-size:0.9rem;">{{ t.port_desc }}</p>
+    <div style="display: flex; gap: 12px;">
+        <button id="share-cv-btn" class="btn secondary" style="padding:12px 24px; border-radius:12px; font-weight:700; border:1px solid var(--cyan); color:var(--cyan); background:transparent;">🔗 {{ t.port_share }}</button>
+        <button id="open-upload-btn" class="btn primary" style="padding:12px 24px; border-radius:12px; font-weight:700;">+ {{ t.port_new }}</button>
+    </div>
+</div>
+
+<!-- Main Viewport with Scroll -->
+<div style="max-height: calc(100vh - 280px); overflow-y: auto; padding-right: 15px; margin-top: 10px;" class="custom-scroll">
+    <div id="portfolio-content" style="display: flex; flex-direction: column; gap: 32px; max-width: 1000px; margin: 0 auto;">
+        <!-- Passport Cards load here -->
+    </div>
+</div>
+
+<!-- 📦 UPLOAD MODAL 📦 -->
+<div id="upload-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); backdrop-filter:blur(8px); z-index:2000; align-items:center; justify-content:center;">
+    <div class="card" style="width:100%; max-width:600px; background:var(--bg); border-radius:24px; padding:40px; position:relative;">
+        <span id="close-upload" style="position:absolute; top:20px; right:24px; font-size:1.5rem; cursor:pointer; color:var(--text-muted);">×</span>
+        <h2 style="margin-bottom:8px; font-family:var(--font-heading);">Add to Portfolio</h2>
+        <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:30px;">Describe your achievement and let AI verify the details.</p>
+        
+        <div id="drop-area" style="border: 2px dashed var(--border); border-radius:16px; padding:40px; text-align:center; transition:0.3s; position:relative;">
+            <div style="font-size:2rem; margin-bottom:12px;">📁</div>
+            <div id="file-label" style="font-size:0.9rem; font-weight:600;">Drag & Drop or Click to Upload</div>
+            <input type="file" id="file-input" style="position:absolute; inset:0; opacity:0; cursor:pointer;">
+        </div>
+
+        <div style="margin-top:24px; display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+            <div>
+                <label style="font-size:0.75rem; font-weight:800; color:var(--cyan); letter-spacing:1px;">CATEGORY</label>
+                <select id="doc-type" style="width:100%; margin-top:8px; padding:12px; border-radius:12px; background:var(--bg); color:var(--text-main); border:1px solid var(--border);">
+                    <option value="IELTS Certificate">📜 IELTS Certificate</option>
+                    <option value="GPA Transcript">📊 GPA Transcript</option>
+                    <option value="Source Code / Project">💻 Source Code (Zip/Script)</option>
+                    <option value="Video Presentation">🎥 Video Pitch</option>
+                    <option value="Award / Achievement">🏆 Award / Achievement</option>
+                </select>
+            </div>
+            <div>
+                <label style="font-size:0.75rem; font-weight:800; color:var(--cyan); letter-spacing:1px;">DOCUMENT TITLE</label>
+                <input type="text" id="doc-title" placeholder="e.g. My IELTS 8.0" style="width:100%; margin-top:8px; padding:12px; border-radius:12px; background:var(--bg); color:var(--text-main); border:1px solid var(--border);">
+            </div>
+        </div>
+
+        <div style="margin-top:20px;">
+            <label style="font-size:0.75rem; font-weight:800; color:var(--cyan); letter-spacing:1px;">ADDITIONAL NOTES / DESCRIPTION</label>
+            <textarea id="doc-desc" placeholder="Tell us more about this project or certificate..." style="width:100%; margin-top:8px; padding:12px; border-radius:12px; background:var(--bg); color:var(--text-main); border:1px solid var(--border); height:100px; resize:none;"></textarea>
+        </div>
+
+        <button id="upload-btn" class="btn primary" style="width:100%; margin-top:30px; height:50px; font-weight:700;">VERIFY & ADD TO PORTFOLIO</button>
+        <div id="upload-status" style="margin-top:15px; text-align:center; font-size:0.8rem;"></div>
+    </div>
+</div>
+
+<script>
+    window.addEventListener('DOMContentLoaded', () => {
+        const modal = document.getElementById('upload-modal');
+        const openBtn = document.getElementById('open-upload-btn');
+        const closeBtn = document.getElementById('close-upload');
+        const fileInput = document.getElementById('file-input');
+        const dropArea = document.getElementById('drop-area');
+
+        openBtn.onclick = () => modal.style.display = 'flex';
+        closeBtn.onclick = () => modal.style.display = 'none';
+        
+        const shareBtn = document.getElementById('share-cv-btn');
+        shareBtn.onclick = async () => {
+            const res = await fetch('/api/me');
+            const data = await res.json();
+            if(data.user && data.user.username) {
+                const url = window.location.origin + '/p/' + data.user.username;
+                navigator.clipboard.writeText(url);
+                shareBtn.innerText = "LINK COPIED! ✅";
+                setTimeout(() => shareBtn.innerText = "🔗 SHARE PUBLIC CV", 2000);
+            }
+        };
+
+        fileInput.onchange = (e) => {
+            const name = e.target.files[0] ? e.target.files[0].name : "Select File";
+            document.getElementById('file-label').innerText = name;
+            dropArea.style.borderColor = "var(--cyan)";
+        };
+
+        loadPortfolio();
+        
+        const uploadBtn = document.getElementById('upload-btn');
+        uploadBtn.addEventListener('click', async () => {
+            const file = fileInput.files[0];
+            const type = document.getElementById('doc-type').value;
+            const title = document.getElementById('doc-title').value;
+            const desc = document.getElementById('doc-desc').value;
+            if(!file) return alert('No file selected!');
+            
+            uploadBtn.disabled = true;
+            uploadBtn.innerText = "Analyzing Certificate...";
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('type', type);
+            formData.append('title', title);
+            formData.append('description', desc);
+            
+            try {
+                const res = await fetch('/api/vault/upload', { method: 'POST', body: formData });
+                const data = await res.json();
+                if(data.ok) {
+                    modal.style.display = 'none';
+                    loadPortfolio();
+                    // Clear fields
+                    document.getElementById('doc-title').value = '';
+                    document.getElementById('doc-desc').value = '';
+                    alert("Success! Your " + type + " has been verified.");
+                } else alert(data.error || "Upload failed");
+            } catch(e) { console.error(e); }
+            
+            uploadBtn.disabled = false;
+            uploadBtn.innerText = "AI SCAN & UPLOAD";
+        });
+    });
+
+    async function deleteItem(id) {
+        if(!confirm("Are you sure?")) return;
+        try {
+            const res = await fetch(`/api/portfolio/delete/${id}`, { method: 'POST' });
+            if(res.ok) loadPortfolio();
+        } catch(e) { console.error(e); }
+    }
+
+    function loadPortfolio() {
+        const icons = {
+            'Source Code / Project': '💻', 'Video Presentation': '🎥',
+            'IELTS Certificate': '📜', 'GPA Transcript': '📊', 'Award / Achievement': '🏆'
+        };
+        const priority = {
+            'IELTS Certificate': 1, 'GPA Transcript': 2, 'Award / Achievement': 3,
+            'Video Presentation': 4, 'Image': 5, 'Source Code / Project': 6, 'Others': 7
+        };
+
+        fetch('/api/portfolio').then(r=>r.json()).then(data => {
+            // Sort by priority
+            data.sort((a, b) => (priority[a.type] || 99) - (priority[b.type] || 99));
+
+            const b = document.getElementById('portfolio-content');
+            if(b && data.length) b.innerHTML = data.map(p => {
+                let aiHtml = '';
+                let displayDesc = 'No description provided.';
+                let aiRaw = '';
+                let details = null;
+                let scoreVal = 'N/A';
+                
+                try {
+                    if (p.description.startsWith('{')) {
+                       const d = JSON.parse(p.description);
+                       displayDesc = d.summary || displayDesc;
+                       aiRaw = d.ai_raw || "";
+                       details = d.details;
+                       scoreVal = (p.type.includes('IELTS') || p.type.includes('GPA')) ? d.score : 'N/A';
+                    } else {
+                        displayDesc = p.description;
+                    }
+                } catch(e){}
+
+                let previewHtml = '';
+                if (p.file_path) {
+                    const ext = p.file_path.split('.').pop().toLowerCase();
+                    if (['png', 'jpg', 'jpeg', 'webp'].includes(ext)) {
+                        previewHtml = `<div style="border-radius:16px; overflow:hidden; border:1px solid var(--border); background:#202124; cursor:pointer; height:100%; min-height:220px; display:flex; align-items:center; justify-content:center;" onclick="window.open('${p.file_path}')">
+                                        <img src="${p.file_path}" style="max-width:100%; max-height:100%; object-fit:contain;">
+                                      </div>`;
+                    } else if (ext === 'pdf') {
+                        previewHtml = `<div style="border-radius:16px; overflow:hidden; border:1px solid var(--border); background:#fff; position:relative; height:100%; min-height:280px; width:100%; pointer-events:none;">
+                                        <embed src="${p.file_path}#toolbar=0&navpanes=0&scrollbar=0&view=Fit" type="application/pdf" width="100%" height="100%" style="position:absolute; inset:0;">
+                                      </div>`;
+                    }
+                }
+
+                return `
+                <div class="card portfolio-item v5-passport" style="padding:0; border-radius:32px; background: rgba(255,255,255,0.85); backdrop-filter:blur(15px); border:1px solid rgba(255,255,255,0.5); box-shadow: 0 20px 50px rgba(0,0,0,0.04); overflow:hidden; transition:0.4s; display:flex; min-height:320px;">
+                    <!-- Left: Preview (45%) -->
+                    <div style="flex: 0 0 42%; background: rgba(0,0,0,0.02); padding:24px; display:flex; flex-direction:column; border-right:1px solid rgba(0,0,0,0.05);">
+                        ${previewHtml}
+                        <div style="margin-top:16px; display:flex; justify-content:center;">
+                             <a href="${p.file_path}" target="_blank" class="btn" style="padding:8px 16px; font-size:0.7rem; border-radius:10px; background:#fff; border:1px solid var(--border); color:var(--text-main); font-weight:700;">VIEW FULL DOC</a>
+                        </div>
+                    </div>
+
+                    <!-- Right: Info (58%) -->
+                    <div style="flex: 1; padding:32px; display:flex; flex-direction:column; position:relative;">
+                        <button onclick="deleteItem(${p.id})" class="delete-btn" style="position:absolute; top:20px; right:20px;">×</button>
+                        
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                            <div style="background:var(--bg); padding:5px 12px; border-radius:30px; font-size:0.6rem; font-weight:800; color:var(--cyan); border:1px solid rgba(37,99,235,0.1); letter-spacing:0.5px;">
+                                ${(p.type||'').toUpperCase()}
+                            </div>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                ${p.verified ? '<div class="ai-badge">AI VERIFIED</div>' : '<div class="unverified-badge">PENDING</div>'}
+                            </div>
+                        </div>
+
+                        <div style="display:flex; align-items:center; gap:16px; margin-bottom:20px;">
+                            <div style="font-size:2rem;">${icons[p.type] || '📂'}</div>
+                            <div>
+                                <h3 style="font-size:1.4rem; margin:0; color:var(--text-main); font-family:var(--font-heading);">${p.title}</h3>
+                                <div style="font-size:0.8rem; color:var(--text-muted); opacity:0.7;">Acquired on ${p.date}</div>
+                            </div>
+                        </div>
+
+                        <p style="font-size:0.9rem; color:var(--text-muted); line-height:1.6; margin-bottom:24px;">${displayDesc}</p>
+
+                        <!-- AI Grid Stats -->
+                        ${details ? `
+                        <div style="background:rgba(37,99,235,0.03); border:1px solid rgba(37,99,235,0.08); border-radius:20px; padding:20px; display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+                            <div class="stat-box">
+                                <label>ISSUER</label>
+                                <span>${details.issuer || 'Official Body'}</span>
+                            </div>
+                            <div class="stat-box">
+                                <label>OFFICIAL SCORE</label>
+                                <span style="color:var(--cyan); font-weight:800; font-size:1.1rem;">${scoreVal}</span>
+                            </div>
+                            <div class="stat-box">
+                                <label>DATE FOUND</label>
+                                <span>${details.date || 'N/A'}</span>
+                            </div>
+                            <div class="stat-box">
+                                <label>RECOGNITION</label>
+                                <span>${details.level || 'International'}</span>
+                            </div>
+                        </div>
+                        ` : ''}
+
+                        ${aiRaw ? `<div style="margin-top:16px; font-size:0.7rem; color:var(--text-muted); font-style:italic; opacity:0.6;">AI Context: ${aiRaw}</div>` : ''}
+                    </div>
+                </div>`;
+            }).join('');
+            else if(b) b.innerHTML = '<div style="padding:100px; text-align:center; color:var(--text-muted);">Your platform portfolio is empty. Start by uploading a project.</div>';
+        }).catch(e => console.error(e));
+    }
+</script>
+
+<style>
+    .custom-scroll::-webkit-scrollbar { width: 6px; }
+    .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.05); border-radius: 10px; }
+    .custom-scroll:hover::-webkit-scrollbar-thumb { background: var(--border); }
+
+    .stat-box label { display:block; font-size:0.55rem; font-weight:900; color:var(--text-muted); letter-spacing:1px; margin-bottom:4px; }
+    .stat-box span { font-size:0.85rem; font-weight:600; color:var(--text-main); }
+    
+    .ai-badge { background: linear-gradient(135deg, #2563eb, #3b82f6); color:white; font-size:0.6rem; font-weight:900; padding:4px 12px; border-radius:20px; box-shadow: 0 4px 12px rgba(37,99,235,0.2); }
+    .unverified-badge { background:rgba(0,0,0,0.04); color:var(--text-muted); font-size:0.6rem; font-weight:800; padding:4px 12px; border-radius:20px; }
+
+    .v5-passport:hover { transform: scale(1.01); box-shadow: 0 30px 60px rgba(37,99,235,0.08); border-color: var(--cyan); }
+    
+    @media (max-width: 800px) {
+        .v5-passport { flex-direction: column !important; min-height:auto; }
+        div[style*="flex: 0 0 42%"] { border-right:none !important; border-bottom:1px solid rgba(0,0,0,0.05) !important; flex:none !important; }
+    }
+
+    #drop-area:hover { border-color: var(--cyan); background: rgba(37,99,235,0.02); }
+    .delete-btn { width:28px; height:28px; border-radius:10px; border:none; background:rgba(239,68,68,0.05); color:#ef4444; font-size:1.2rem; display:flex; align-items:center; justify-content:center; cursor:pointer; opacity:0.3; transition:0.3s; }
+    .delete-btn:hover { opacity:1; background:#ef4444; color:#fff; transform: rotate(90deg); }
+</style>
+{% endblock %}

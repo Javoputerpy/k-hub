@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="padding:30px 40px 60px;max-width:1000px;margin:0 auto;">
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:40px;flex-wrap:wrap;">
+        <a href="/courses" style="color:var(--text-muted);font-size:0.82rem;font-weight:700;text-decoration:none;">← BACK</a>
+        <div>
+            <div style="font-size:0.7rem;font-weight:800;letter-spacing:2px;color:var(--cyan);">🎧 LISTENING EXERCISE</div>
+            <h1 style="font-family:var(--font-heading);font-size:1.8rem;font-weight:900;margin:4px 0;">Fill in the Blanks</h1>
+        </div>
+    </div>
+
+    {% if session.completed_at %}
+    <div style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);padding:20px;border-radius:16px;margin-bottom:30px;text-align:center;">
+        ✅ You completed this exercise. Score: <strong>{{ session.score }}/9</strong>
+    </div>
+    {% endif %}
+
+    <!-- Audio Player -->
+    <div class="glass-panel" style="padding:30px;border-radius:24px;margin-bottom:30px;text-align:center;">
+        <div style="font-size:0.72rem;font-weight:800;opacity:0.5;margin-bottom:12px;">AUDIO PASSAGE (listen carefully, transcript is hidden)</div>
+        {% if session.audio_path %}
+        <audio id="main-audio" controls style="width:100%;border-radius:12px;margin-bottom:10px;">
+            <source src="{{ session.audio_path }}" type="audio/mpeg">
+        </audio>
+        <div style="font-size:0.75rem;opacity:0.4;">You may play the audio as many times as you need.</div>
+        {% else %}
+        <div style="padding:20px;opacity:0.5;">
+            <div style="font-size:2rem;margin-bottom:8px;">🔇</div>
+            <div>Audio not available. Try generating a new exercise.</div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Fill in Blanks Section -->
+    <div class="glass-panel" style="padding:32px;border-radius:24px;margin-bottom:30px;">
+        <h3 style="font-family:var(--font-heading);font-size:1.2rem;margin-bottom:20px;">Part 1: Fill in the Blanks</h3>
+        <div style="font-size:0.85rem;opacity:0.6;margin-bottom:20px;">Listen to the audio and fill in the missing words. The passage below shows [BLANK_X] where words are missing.</div>
+        
+        <div id="blank-fields" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;">
+            {% for b in blanks %}
+            <div style="display:flex;align-items:center;gap:10px;">
+                <div style="font-weight:800;color:var(--cyan);font-size:0.85rem;white-space:nowrap;">BLANK {{ b.id }}</div>
+                <input type="text" id="blank-{{ b.id }}" placeholder="your answer..." 
+                    style="flex:1;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:12px;font-size:0.9rem;outline:none;" 
+                    id="blank-{{ b.id }}" data-blank="{{ b.id }}">
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- MCQ Questions -->
+    {% if questions %}
+    <div class="glass-panel" style="padding:32px;border-radius:24px;margin-bottom:30px;">
+        <h3 style="font-family:var(--font-heading);font-size:1.2rem;margin-bottom:24px;">Part 2: Comprehension Questions</h3>
+        {% for q in questions %}
+        <div style="margin-bottom:28px;">
+            <div style="font-weight:700;margin-bottom:12px;">{{ loop.index }}. {{ q.question }}</div>
+            {% for opt in q.options %}
+            <label style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:12px;cursor:pointer;border:1px solid transparent;margin-bottom:8px;" 
+                   class="opt-label" id="opt-{{ q.id }}-{{ loop.index0 }}">
+                <input type="radio" name="q{{ q.id }}" value="{{ ['A','B','C','D'][loop.index0] }}" 
+                    style="accent-color:var(--cyan);">
+                <span style="font-size:0.88rem;">{{ ['A','B','C','D'][loop.index0] }}. {{ opt }}</span>
+            </label>
+            {% endfor %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Submit -->
+    <div style="text-align:center;">
+        <button onclick="submitListening()" id="submit-btn" class="btn-primary" style="padding:16px 50px;border-radius:50px;font-weight:800;font-size:1rem;">
+            SUBMIT ANSWERS
+        </button>
+    </div>
+
+    <!-- Results (hidden until submitted) -->
+    <div id="result-panel" style="display:none;margin-top:40px;"></div>
+</div>
+
+<script>
+const SESSION_ID = {{ session_id }};
+const BLANKS = {{ blanks | tojson }};
+const QUESTIONS = {{ questions | tojson }};
+
+async function submitListening() {
+    const btn = document.getElementById('submit-btn');
+    btn.innerText = 'Checking...';
+    
+    const blank_answers = {};
+    BLANKS.forEach(b => {
+        const el = document.getElementById(`blank-${b.id}`);
+        if (el) blank_answers[b.id] = el.value;
+    });
+    
+    const question_answers = {};
+    QUESTIONS.forEach(q => {
+        const selected = document.querySelector(`input[name="q${q.id}"]:checked`);
+        if (selected) question_answers[q.id] = selected.value;
+    });
+    
+    const res = await fetch('/api/listening/submit', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({session_id: SESSION_ID, blank_answers, question_answers})
+    });
+    const data = await res.json();
+    btn.innerText = 'SUBMIT ANSWERS';
+    
+    if (!data.ok) { showNotification('Error submitting.'); return; }
+    
+    // Show results
+    const panel = document.getElementById('result-panel');
+    panel.style.display = 'block';
+    
+    // Score badge
+    const scoreColor = data.score >= 7 ? '#10b981' : data.score >= 5 ? '#f59e0b' : '#ef4444';
+    panel.innerHTML = `
+        <div class="glass-panel" style="padding:32px;border-radius:24px;border-color:${scoreColor}40;">
+            <div style="text-align:center;margin-bottom:30px;">
+                <div style="font-size:3.5rem;font-weight:900;color:${scoreColor};">${data.score}/9</div>
+                <div style="font-size:0.8rem;font-weight:700;opacity:0.5;margin-top:4px;">BAND SCORE EQUIVALENT</div>
+            </div>
+            
+            <h4 style="margin-bottom:14px;">📝 Blank Answers:</h4>
+            ${data.blank_results.map(r=>`
+                <div style="display:flex;justify-content:space-between;padding:10px 14px;border-radius:10px;margin-bottom:6px;background:${r.correct?'rgba(16,185,129,0.1)':'rgba(239,68,68,0.1)'};font-size:0.85rem;">
+                    <span>Blank ${r.id}: <strong>${r.student || '(empty)'}</strong></span>
+                    <span>${r.correct?'✅':'❌ → <strong>'+r.answer+'</strong>'}</span>
+                </div>`).join('')}
+            
+            <h4 style="margin-top:20px;margin-bottom:14px;">🎯 MCQ Answers:</h4>
+            ${data.mcq_results.map(r=>`
+                <div style="display:flex;justify-content:space-between;padding:10px 14px;border-radius:10px;margin-bottom:6px;background:${r.correct?'rgba(16,185,129,0.1)':'rgba(239,68,68,0.1)'};font-size:0.85rem;">
+                    <span>Q${r.id}: <strong>${r.student || '(no answer)'}</strong></span>
+                    <span>${r.correct?'✅':'❌ → <strong>'+r.answer+'</strong>'}</span>
+                </div>`).join('')}
+            
+            <h4 style="margin-top:24px;margin-bottom:14px;">📖 Full Transcript:</h4>
+            <div style="background:var(--bg);padding:20px;border-radius:14px;font-size:0.9rem;line-height:1.8;opacity:0.85;">${data.transcript}</div>
+        </div>`;
+    
+    panel.scrollIntoView({behavior:'smooth'});
+}
+</script>
+{% endblock %}

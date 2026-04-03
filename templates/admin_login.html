@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Admin Login | K-HUB{% endblock %}
+{% block page_title %}{{ t.tab_admin }} Login{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: center; align-items: center; min-height: 60vh;">
+    <div class="glass-container" style="max-width: 400px; width: 100%; padding: 40px; border-radius: 32px; text-align: center;">
+        <div style="font-size: 3rem; margin-bottom: 20px;">🔐</div>
+        <h2 style="margin-bottom: 30px; font-family: var(--font-heading);">K-Hub Admin</h2>
+        
+        <form method="POST">
+            <input type="text" name="user" placeholder="{{ t.adm_user }}" required style="width: 100%; padding: 15px; margin-bottom: 15px; border-radius: 12px; border: 1px solid var(--border); background: rgba(0,0,0,0.02); outline: none;">
+            <input type="password" name="pw" placeholder="{{ t.adm_pw }}" required style="width: 100%; padding: 15px; margin-bottom: 30px; border-radius: 12px; border: 1px solid var(--border); background: rgba(0,0,0,0.02); outline: none;">
+            
+            <button type="submit" class="btn secondary" style="width: 100%; padding: 15px; font-weight: 800;">{{ t.login_btn }}</button>
+        </form>
+        
+        <p style="margin-top: 20px; font-size: 0.8rem; color: var(--text-muted);">Access restricted to authorized KAIST personnel.</p>
+    </div>
+</div>
+{% endblock %}

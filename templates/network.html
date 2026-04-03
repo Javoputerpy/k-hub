@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% block title %}Community | K-HUB{% endblock %}
+{% block page_title %}{{ t.tab_network }}{% endblock %}
+
+{% block content %}
+<div class="glass-container" style="padding:40px; margin-bottom:40px; text-align:center;">
+    <h2 style="font-family:var(--font-heading); font-size:2rem; color:var(--cyan); margin-bottom:10px;">{{ t.net_find }}</h2>
+    <p style="color:var(--text-muted); max-width:600px; margin:0 auto 30px;">Connect with peers, share research insights, and build your KAIST admission tribe.</p>
+    
+    <div style="max-width:500px; margin:0 auto; position:relative;">
+        <input type="text" id="net-search" placeholder="{{ t.btn_search }} by major or name..." style="padding:15px 40px 15px 20px; border-radius:50px;">
+        <span style="position:absolute; right:20px; top:15px; opacity:0.5;">🔍</span>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 2.5fr 1fr; gap: 30px; align-items: start;">
+    <!-- LEFT: Network Grid -->
+    <div>
+        <div id="network-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:25px;">
+            <!-- Loaded via API -->
+        </div>
+    </div>
+    
+    <!-- RIGHT: Community Chat Sidebar -->
+    <div class="glass-container" style="padding: 25px; border-radius: 24px; position: sticky; top: 20px; height: 70vh; display: flex; flex-direction: column;">
+        <h3 style="margin-top:0; color:var(--text-main); font-family:var(--font-heading); display:flex; align-items:center; gap:10px; font-size:1.4rem;">
+            <span style="font-size: 1.8rem;">🌍</span> Live Chat
+        </h3>
+        <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom: 20px;">Connect with applicants globally.</p>
+        
+        <div id="chat-feed" style="flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:12px; margin-bottom: 20px; padding-right: 5px;">
+            <div style="text-align:center; color:var(--text-muted); font-size:0.8rem;">Loading chat...</div>
+        </div>
+        
+        <div style="display:flex; gap:10px;">
+            <input type="text" id="chat-input" class="form-input" placeholder="Say hello..." style="flex:1; padding: 12px 15px;" onkeypress="if(event.key === 'Enter') postMessage()">
+            <button class="btn primary" style="padding: 0 20px;" onclick="postMessage()">SEND</button>
+        </div>
+    </div>
+</div>
+
+<template id="peer-card-tmpl">
+    <div class="card" style="padding:25px; border-radius:24px; position:relative; overflow:hidden;">
+        <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px;">
+            <img src="" class="peer-avatar" style="width:70px; height:70px; border-radius:18px; object-fit:cover; border:1px solid var(--border);">
+            <div>
+                <h4 class="peer-name" style="font-size:1.1rem; margin-bottom:4px;"></h4>
+                <div class="peer-major" style="font-size:0.75rem; color:var(--text-muted); font-weight:700; text-transform:uppercase;"></div>
+            </div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px;">
+            <div style="background:rgba(37,99,235,0.05); padding:10px; border-radius:12px; text-align:center;">
+                <div style="font-size:0.6rem; color:var(--text-muted); font-weight:900;">LEVEL</div>
+                <div class="peer-level" style="font-weight:800; color:var(--cyan);"></div>
+            </div>
+            <div style="background:rgba(37,99,235,0.05); padding:10px; border-radius:12px; text-align:center;">
+                <div style="font-size:0.6rem; color:var(--text-muted); font-weight:900;">XP</div>
+                <div class="peer-xp" style="font-weight:800; color:var(--cyan);"></div>
+            </div>
+        </div>
+        <div style="display:flex; gap:10px;">
+            <a href="" class="peer-link btn secondary" style="flex:1; text-align:center; padding:10px; text-decoration:none;">VIEW PROFILE</a>
+            <button class="connect-btn btn primary" style="flex:1; padding:10px;">{{ t.btn_connect }}</button>
+        </div>
+    </div>
+</template>
+
+<script>
+async function loadPeers() {
+    const grid = document.getElementById('network-grid');
+    const tmpl = document.getElementById('peer-card-tmpl');
+    const res = await fetch('/api/network/users').then(r=>r.json());
+    
+    if(res.ok) {
+        grid.innerHTML = '';
+        res.users.forEach(u => {
+            const clone = tmpl.content.cloneNode(true);
+            clone.querySelector('.peer-name').innerText = u.name;
+            clone.querySelector('.peer-major').innerText = u.field || 'KAIST APPLICANT';
+            clone.querySelector('.peer-level').innerText = u.level;
+            clone.querySelector('.peer-xp').innerText = u.xp;
+            clone.querySelector('.peer-avatar').src = u.avatar_path || `https://api.dicebear.com/8.x/initials/svg?seed=${u.name}`;
+            clone.querySelector('.peer-link').href = `/p/${u.username || u.tg_id}`;
+            
+            const btn = clone.querySelector('.connect-btn');
+            btn.onclick = () => connectPeer(u.tg_id, btn);
+            
+            grid.appendChild(clone);
+        });
+    }
+}
+
+async function connectPeer(toId, btn) {
+    btn.disabled = true;
+    btn.innerText = 'Connecting...';
+    const res = await fetch('/api/network/connect', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({to_id: toId})
+    }).then(r=>r.json());
+    
+    if(res.ok) {
+        btn.innerText = 'Connected ✓';
+        btn.style.background = '#10b981';
+    }
+}
+
+document.getElementById('net-search').oninput = (e) => {
+    const q = e.target.value.toLowerCase();
+    document.querySelectorAll('#network-grid .card').forEach(card => {
+        const text = card.innerText.toLowerCase();
+        card.style.display = text.includes(q) ? 'block' : 'none';
+    });
+};
+
+function loadChat() {
+    fetch('/api/community/chat').then(r=>r.json()).then(data => {
+        const feed = document.getElementById('chat-feed');
+        if(!data || data.length === 0) {
+            feed.innerHTML = `<div style="text-align:center; color:var(--text-muted); font-size:0.8rem; padding:20px;">Begin the conversation!</div>`;
+            return;
+        }
+        
+        // Reverse array from API if it was newest first, we want oldest first (top to bottom reading)
+        const isScrollingToBottom = (feed.scrollHeight - feed.scrollTop <= feed.clientHeight + 50);
+        
+        feed.innerHTML = data.map(m => `
+            <div style="background: rgba(255,255,255,0.6); padding: 12px 15px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.8); box-shadow: 0 4px 15px rgba(0,0,0,0.02);">
+                <div style="font-size:0.75rem; font-weight:800; color:var(--text-main); margin-bottom:5px; display:flex; justify-content:space-between;">
+                    <span>${m.name}</span>
+                    <span style="font-weight:400; color:var(--text-muted);">${new Date(m.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                </div>
+                <div style="font-size:0.9rem; color:var(--text-main); line-height: 1.4; word-break: break-word;">${m.text}</div>
+            </div>
+        `).join('');
+        
+        if(isScrollingToBottom) feed.scrollTop = feed.scrollHeight;
+    });
+}
+
+function postMessage() {
+    const input = document.getElementById('chat-input');
+    const text = input.value.trim();
+    if(!text) return;
+    
+    input.disabled = true;
+    fetch('/api/community/chat', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({text})
+    }).then(r=>r.json()).then(res => {
+        input.disabled = false;
+        if(res.ok) {
+            input.value = '';
+            loadChat();
+            setTimeout(() => {
+                const feed = document.getElementById('chat-feed');
+                feed.scrollTop = feed.scrollHeight;
+            }, 50);
+        } else {
+            alert(res.error || "Failed to send");
+        }
+    }).catch(() => input.disabled = false);
+}
+
+loadPeers();
+loadChat();
+setInterval(loadChat, 5000); // Auto-refresh every 5s
+</script>
+{% endblock %}

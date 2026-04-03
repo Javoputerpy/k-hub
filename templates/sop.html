@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block page_title %}{{ t.tab_sop }}{% endblock %}
+{% block content %}
+<div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 30px; align-items: start;">
+    <!-- LEFT: Writing Tool -->
+    <div class="glass-container" style="padding: 40px; border-radius: 32px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+            <h3 style="margin: 0;">✍️ {{ t.sop_arch }}</h3>
+            <div style="display:flex; gap:10px; background:rgba(255,255,255,0.05); padding:5px; border-radius:12px; border:1px solid var(--border);">
+                <button id="mode-draft" class="btn" style="padding: 8px 15px; font-size:0.7rem; background:var(--cyan); color:#000;">DRAFT MODE</button>
+                <button id="mode-review" class="btn" style="padding: 8px 15px; font-size:0.7rem; background:transparent;">REVIEW MODE</button>
+            </div>
+        </div>
+        <p id="sop-mode-desc" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 30px;">AI-powered drafting tool tailored for the KAIST admission cycle.</p>
+        
+        <div id="sop-writer-area" style="display:flex; flex-direction:column; gap:20px;">
+            <div id="sop-result" style="background: rgba(0,0,0,0.02); padding: 30px; border-radius: 20px; min-height: 300px; line-height: 1.8; color: var(--text-main); font-size: 0.9rem; position: relative; border:1px solid var(--border);">
+                <div id="sop-placeholder" style="opacity: 0.3; text-align: center; margin-top: 100px;">
+                    <div style="font-size: 3rem;">📝</div>
+                    <p>Your draft will appear here...</p>
+                </div>
+            </div>
+            <button id="sop-btn" class="btn primary" style="width:100%; padding: 15px; font-weight: 800;">✨ GENERATE AI DRAFT</button>
+        </div>
+
+        <div id="sop-reviewer-area" style="display:none; flex-direction:column; gap:20px;">
+            <textarea id="sop-input" style="width:100%; height:300px; background:rgba(0,0,0,0.2); border:1px solid var(--border); border-radius:20px; padding:20px; color:#fff; font-family:inherit; resize:none;" placeholder="Paste your existing SOP here to get a review and score..."></textarea>
+            <button id="sop-review-btn" class="btn primary" style="width:100%; padding:15px; font-weight:800; background:var(--gold); color:#000;">🔍 ANALYZE MY SOP</button>
+        </div>
+    </div>
+
+    <!-- RIGHT: Guide & Review Stats -->
+    <div style="display: flex; flex-direction: column; gap: 30px;">
+        <div id="review-stats-card" class="glass-container" style="display:none; padding: 30px; border-radius: 32px; border-color:var(--gold);">
+            <h4 style="margin:0 0 20px 0; color:var(--gold);">🏆 ADMISSION SCORE: <span id="res-score">0</span>/10</h4>
+            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-bottom:20px;">
+                <div style="text-align:center;"><div style="font-size:0.5rem; opacity:0.5;">CREATIVITY</div><div id="res-cre" style="font-weight:900;">-</div></div>
+                <div style="text-align:center;"><div style="font-size:0.5rem; opacity:0.5;">CHALLENGE</div><div id="res-cha" style="font-weight:900;">-</div></div>
+                <div style="text-align:center;"><div style="font-size:0.5rem; opacity:0.5;">CARING</div><div id="res-car" style="font-weight:900;">-</div></div>
+            </div>
+            <p id="res-feedback" style="font-size:0.75rem; color:var(--text-muted); line-height:1.6;"></p>
+        </div>
+
+
+    <!-- RIGHT: Guide & Illustration -->
+    <div style="display: flex; flex-direction: column; gap: 30px;">
+        <div class="glass-container" style="padding: 30px; border-radius: 32px; text-align: center;">
+            <img src="/C:/Users/user/.gemini/antigravity/brain/8cf7075d-ad04-40c0-b001-4c9c49e439d0/sop_writing_illustration_v10_0_1775068113630.png" style="width: 100%; border-radius: 20px; margin-bottom: 20px;">
+            <h4 style="margin-bottom: 10px;">{{ t.sop_values }}</h4>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <span class="badge" style="background:rgba(59,130,246,0.1); color:#3b82f6; border:none; padding:5px 12px;">CREATIVITY</span>
+                <span class="badge" style="background:rgba(16,185,129,0.1); color:#10b981; border:none; padding:5px 12px;">CHALLENGE</span>
+                <span class="badge" style="background:rgba(244,63,94,0.1); color:#f43f5e; border:none; padding:5px 12px;">CARING</span>
+            </div>
+        </div>
+
+        <div id="sop-guide-card" class="glass-container" style="padding: 30px; border-radius: 32px;">
+            <h4 style="margin-top: 0; margin-bottom: 20px;">📘 {{ t.sop_struct }}</h4>
+            <div class="guide-steps" style="display: flex; flex-direction: column; gap: 15px;">
+                <div style="display:flex; gap:12px;">
+                    <span style="font-weight:900; color:var(--cyan);">01</span>
+                    <p style="font-size:0.75rem;"><strong style="display:block;">{{ t.sop_step1 }}</strong> {{ t.sop_step1_d }}</p>
+                </div>
+                <div style="display:flex; gap:12px;">
+                    <span style="font-weight:900; color:var(--cyan);">02</span>
+                    <p style="font-size:0.75rem;"><strong style="display:block;">Academic Background</strong> Demonstrating technical rigor and GPA.</p>
+                </div>
+                <div style="display:flex; gap:12px;">
+                    <span style="font-weight:900; color:var(--cyan);">03</span>
+                    <p style="font-size:0.75rem;"><strong style="display:block;">Research Interest</strong> Specific KAIST labs and projects.</p>
+                </div>
+                <div style="display:flex; gap:12px;">
+                    <span style="font-weight:900; color:var(--cyan);">04</span>
+                    <p style="font-size:0.75rem;"><strong style="display:block;">Future Goals</strong> How you will impact global society.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const btnDraft = document.getElementById('mode-draft');
+    const btnReview = document.getElementById('mode-review');
+    const areaDraft = document.getElementById('sop-writer-area');
+    const areaReview = document.getElementById('sop-reviewer-area');
+    const statsCard = document.getElementById('review-stats-card');
+    const guideCard = document.getElementById('sop-guide-card');
+
+    btnDraft.addEventListener('click', () => {
+        btnDraft.style.background = 'var(--cyan)'; btnDraft.style.color = '#000';
+        btnReview.style.background = 'transparent'; btnReview.style.color = '#fff';
+        areaDraft.style.display = 'flex'; areaReview.style.display = 'none';
+        statsCard.style.display = 'none'; guideCard.style.display = 'block';
+        document.getElementById('sop-mode-desc').innerText = 'AI-powered drafting tool tailored for the KAIST admission cycle.';
+    });
+
+    btnReview.addEventListener('click', () => {
+        btnReview.style.background = 'var(--gold)'; btnReview.style.color = '#000';
+        btnDraft.style.background = 'transparent'; btnDraft.style.color = '#fff';
+        areaDraft.style.display = 'none'; areaReview.style.display = 'flex';
+        guideCard.style.display = 'none';
+        document.getElementById('sop-mode-desc').innerText = 'Get your SOP graded by AI based on KAIST values and requirements.';
+    });
+
+    document.getElementById('sop-btn').addEventListener('click', () => {
+        const res = document.getElementById('sop-result');
+        res.innerHTML = '<div style="text-align:center; padding-top:100px;">Drafting your future... 🧬</div>';
+        fetch('/api/sop/generate', {method: 'POST'}).then(r=>r.json()).then(data => {
+            res.innerHTML = `<div style="white-space: pre-wrap;">${data.sop}</div>`;
+        });
+    });
+
+    document.getElementById('sop-review-btn').addEventListener('click', async () => {
+        const text = document.getElementById('sop-input').value;
+        if(!text) return alert("Please paste your SOP first!");
+        
+        const btn = document.getElementById('sop-review-btn');
+        btn.innerText = 'Analyzing...'; btn.disabled = true;
+
+        try {
+            const data = await fetch('/api/sop/review', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({sop: text})
+            }).then(r=>r.json());
+
+            document.getElementById('res-score').innerText = data.score;
+            document.getElementById('res-cre').innerText = data.creativity;
+            document.getElementById('res-cha').innerText = data.challenge;
+            document.getElementById('res-car').innerText = data.caring;
+            document.getElementById('res-feedback').innerText = data.feedback;
+            statsCard.style.display = 'block';
+        } catch(e) { alert("AI Review failed. Try again."); }
+        finally { btn.innerText = '🔍 ANALYZE MY SOP'; btn.disabled = false; }
+    });
+</script>
+{% endblock %}

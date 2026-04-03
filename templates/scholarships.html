@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block page_title %}{{ t.tab_scholarships }}{% endblock %}
+{% block content %}
+<div class="glass-container" style="padding:40px; margin-bottom:40px;">
+    <h2 style="font-family:var(--font-heading); font-size:2rem; color:var(--cyan); margin-bottom:10px;">{{ t.tab_scholarships }}</h2>
+    <p style="color:var(--text-muted); max-width:600px;">{{ t.sch_desc }}</p>
+</div>
+
+<div id="scholarships-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 30px;">
+    <!-- Loaded via JS -->
+</div>
+
+<template id="sch-card-tmpl">
+    <div class="glass-container" style="padding: 0; border-radius: 32px; display: flex; flex-direction: column; overflow: hidden; transition: 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); border: 1px solid rgba(255,255,255,0.06); height: 100%;">
+        <div class="sch-img-container" style="height: 180px; position: relative; overflow: hidden; background: rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center;">
+            <img class="sch-img" src="" style="height: 120%; width: auto; object-fit: contain; filter: drop-shadow(0 20px 40px rgba(0,0,0,0.4)); transition: 0.6s ease;">
+            <div style="position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.6), transparent);"></div>
+            <span class="badge sch-badge" style="position: absolute; bottom: 15px; left: 15px; font-size: 0.65rem; font-weight: 900; letter-spacing: 1px;"></span>
+        </div>
+        <div style="padding: 25px; display: flex; flex-direction: column; flex-grow: 1;">
+            <h4 class="sch-name" style="font-family: var(--font-heading); font-size: 1.3rem; margin-bottom: 12px; line-height: 1.2;"></h4>
+            <p class="sch-detail" style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 25px;"></p>
+            <button class="btn primary" style="margin-top: auto; width: 100%; border-radius: 12px;">{{ t.btn_apply }} ↗</button>
+        </div>
+    </div>
+</template>
+
+<script>
+async function loadScholarships() {
+    const grid = document.getElementById('scholarships-grid');
+    const tmpl = document.getElementById('sch-card-tmpl');
+    const res = await fetch('/api/admin/scholarships').then(r=>r.json());
+    
+    const imageMap = {
+        'iss': '/static/images/iss_3d.png',
+        'gks': '/static/images/gks_3d.png',
+        'samsung': '/static/images/samsung_3d.png',
+        'default': '/static/images/campus_vibe.png'
+    };
+
+    if(res.length > 0) {
+        grid.innerHTML = '';
+        res.forEach(s => {
+            const clone = tmpl.content.cloneNode(true);
+            const nameLower = s.name.toLowerCase();
+            
+            let imgUrl = imageMap.default;
+            if (nameLower.includes('iss')) imgUrl = imageMap.iss;
+            else if (nameLower.includes('gks')) imgUrl = imageMap.gks;
+            else if (nameLower.includes('samsung')) imgUrl = imageMap.samsung;
+
+            clone.querySelector('.sch-img').src = imgUrl;
+            clone.querySelector('.sch-name').innerText = s.name;
+            clone.querySelector('.sch-detail').innerText = s.detail;
+            const badge = clone.querySelector('.sch-badge');
+            badge.innerText = s.badge || 'OPEN';
+            badge.style.background = 'rgba(6, 182, 212, 0.1)';
+            badge.style.color = 'var(--cyan)';
+            badge.style.border = '1px solid rgba(6, 182, 212, 0.2)';
+            grid.appendChild(clone);
+        });
+    } else {
+        grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 60px; color: var(--text-muted);">Stay tuned! New scholarships are added weekly.</div>';
+    }
+}
+loadScholarships();
+</script>
+{% endblock %}

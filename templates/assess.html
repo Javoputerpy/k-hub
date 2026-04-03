@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="content-area" style="max-width:700px;margin:0 auto;padding:40px;">
+
+    <!-- Header -->
+    <div style="text-align:center;margin-bottom:50px;">
+        <div style="font-size:3rem;margin-bottom:16px;">🧠</div>
+        <div style="font-size:0.7rem;font-weight:800;letter-spacing:3px;color:var(--cyan);margin-bottom:10px;">LEVEL ASSESSMENT</div>
+        <h1 style="font-family:var(--font-heading);font-size:2.2rem;font-weight:900;margin-bottom:10px;">{{ course.title }}</h1>
+        <p style="opacity:0.6;font-size:0.95rem;">AI will ask you 6 questions to determine your current level and build a personalized study plan.</p>
+    </div>
+
+    <!-- Progress Bar -->
+    <div style="background:var(--border);border-radius:50px;height:6px;margin-bottom:40px;overflow:hidden;">
+        <div id="progress-bar" style="height:100%;background:var(--cyan);width:0%;transition:0.5s;box-shadow:0 0 10px var(--cyan-glow);"></div>
+    </div>
+
+    <!-- Exam Setup (shown first) -->
+    <div id="setup-section" class="glass-panel" style="padding:36px;border-radius:24px;margin-bottom:30px;">
+        <h3 style="font-family:var(--font-heading);font-size:1.3rem;margin-bottom:24px;">Before we begin...</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+            <div>
+                <label style="font-size:0.72rem;font-weight:800;opacity:0.6;display:block;margin-bottom:8px;">TARGET BAND SCORE</label>
+                <select id="target-score" style="width:100%;padding:12px;background:var(--bg);border:1px solid var(--border);border-radius:12px;outline:none;font-size:0.9rem;">
+                    <option value="6.0">6.0 – Competent</option>
+                    <option value="6.5">6.5 – Competent+</option>
+                    <option value="7.0" selected>7.0 – Good</option>
+                    <option value="7.5">7.5 – Good+</option>
+                    <option value="8.0">8.0 – Very Good</option>
+                </select>
+            </div>
+            <div>
+                <label style="font-size:0.72rem;font-weight:800;opacity:0.6;display:block;margin-bottom:8px;">EXAM DATE</label>
+                <input type="date" id="exam-date" style="width:100%;padding:12px;background:var(--bg);border:1px solid var(--border);border-radius:12px;outline:none;font-size:0.9rem;box-sizing:border-box;">
+            </div>
+        </div>
+        <button onclick="startAssessment()" class="btn-primary" style="width:100%;padding:16px;border-radius:14px;font-weight:800;font-size:0.95rem;">
+            START LEVEL TEST →
+        </button>
+    </div>
+
+    <!-- Chat Assessment -->
+    <div id="chat-section" style="display:none;">
+        <div id="chat-box" style="display:flex;flex-direction:column;gap:20px;margin-bottom:24px;min-height:300px;"></div>
+        
+        <div class="glass-panel" style="padding:20px 24px;border-radius:20px;display:flex;gap:12px;align-items:flex-end;">
+            <textarea id="answer-input" rows="3" placeholder="Type your answer here..." 
+                style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:14px;font-size:0.9rem;resize:none;outline:none;font-family:inherit;line-height:1.6;"></textarea>
+            <button onclick="submitAnswer()" id="submit-btn" class="btn-primary" style="padding:12px 24px;border-radius:14px;font-weight:800;flex-shrink:0;">SEND</button>
+        </div>
+        <div id="hint-box" style="margin-top:10px;font-size:0.8rem;opacity:0.5;text-align:center;"></div>
+    </div>
+
+    <!-- Result -->
+    <div id="result-section" style="display:none;text-align:center;">
+        <div class="glass-panel" style="padding:50px;border-radius:28px;">
+            <div id="result-emoji" style="font-size:4rem;margin-bottom:20px;">🎉</div>
+            <div id="result-cefr" style="font-size:1rem;font-weight:800;color:var(--cyan);letter-spacing:2px;margin-bottom:10px;"></div>
+            <div id="result-level" style="font-family:var(--font-heading);font-size:2.5rem;font-weight:900;margin-bottom:20px;"></div>
+            <p id="result-summary" style="opacity:0.7;line-height:1.7;margin-bottom:36px;"></p>
+            <a id="go-learn-btn" href="#" class="btn-primary" style="display:inline-block;padding:16px 40px;border-radius:50px;font-weight:800;text-decoration:none;">
+                🚀 START LEARNING
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+.bubble-ai { background:rgba(6,182,212,0.1);border:1px solid var(--cyan-glow);padding:18px 22px;border-radius:20px 20px 20px 4px;max-width:85%;font-size:0.95rem;line-height:1.7; }
+.bubble-user { background:var(--cyan);color:white;padding:14px 20px;border-radius:20px 20px 4px 20px;max-width:80%;font-size:0.9rem;line-height:1.7;align-self:flex-end; }
+</style>
+
+<script>
+const COURSE_ID = {{ course.id }};
+const COURSE_TYPE = "{{ course.category }}";
+let history = [];
+let qNum = 0;
+let targetScore = 7.0;
+let examDate = '';
+
+function startAssessment() {
+    targetScore = parseFloat(document.getElementById('target-score').value);
+    examDate = document.getElementById('exam-date').value;
+    document.getElementById('setup-section').style.display = 'none';
+    document.getElementById('chat-section').style.display = 'block';
+    fetchNextQuestion();
+}
+
+async function fetchNextQuestion() {
+    const btn = document.getElementById('submit-btn');
+    if (btn) btn.disabled = true;
+    
+    try {
+        const res = await fetch('/api/assess/question', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({history, course_type: COURSE_TYPE})
+        });
+        const data = await res.json();
+        if (data.done) { await finalizeAssessment(); return; }
+        
+        qNum = data.num;
+        document.getElementById('progress-bar').style.width = `${(qNum/6)*100}%`;
+        appendBubble(data.question, 'ai');
+        if (data.hint) document.getElementById('hint-box').innerText = '💡 ' + data.hint;
+        history.push({role: 'assistant', content: data.question});
+    } catch(e) { console.error(e); }
+    if (btn) btn.disabled = false;
+}
+
+function appendBubble(text, type) {
+    const div = document.createElement('div');
+    div.className = `bubble-${type}`;
+    div.style.animation = 'fadeSlide 0.3s ease';
+    div.innerText = text;
+    const box = document.getElementById('chat-box');
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+}
+
+async function submitAnswer() {
+    const input = document.getElementById('answer-input');
+    const answer = input.value.trim();
+    if (!answer) return;
+    appendBubble(answer, 'user');
+    history.push({role: 'user', content: answer});
+    input.value = '';
+    document.getElementById('hint-box').innerText = '';
+    await fetchNextQuestion();
+}
+
+async function finalizeAssessment() {
+    document.getElementById('chat-section').style.display = 'none';
+    document.getElementById('progress-bar').style.width = '100%';
+    
+    try {
+        const res = await fetch('/api/assess/complete', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({course_id: COURSE_ID, history, exam_date: examDate, target_score: targetScore, course_type: COURSE_TYPE})
+        });
+        const data = await res.json();
+        if (data.ok) {
+            document.getElementById('result-section').style.display = 'block';
+            const levelEmoji = {'beginner':'🌱','intermediate':'🌿','advanced':'🌳'}[data.level] || '🎓';
+            document.getElementById('result-emoji').innerText = levelEmoji;
+            document.getElementById('result-cefr').innerText = data.cefr + ' LEVEL';
+            document.getElementById('result-level').innerText = data.level.charAt(0).toUpperCase() + data.level.slice(1);
+            document.getElementById('result-summary').innerText = data.summary;
+            document.getElementById('go-learn-btn').href = `/course/${COURSE_ID}/learn`;
+        }
+    } catch(e) { console.error(e); }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('answer-input').onkeydown = (e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitAnswer(); } };
+});
+</script>
+{% endblock %}

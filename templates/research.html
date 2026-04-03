@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Research Labs | K-HUB{% endblock %}
+{% block page_title %}{{ t.tab_research }}{% endblock %}
+
+{% block content %}
+<div class="glass-container" style="padding:40px; margin-bottom:40px; display:flex; justify-content:space-between; align-items:center; gap:40px;">
+    <div>
+        <h2 style="font-family:var(--font-heading); font-size:2rem; color:var(--cyan); margin-bottom:10px;">{{ t.res_labs }}</h2>
+        <p style="color:var(--text-muted); max-width:500px;">Explore KAIST's world-class research infrastructure. Find labs that align with your academic goals.</p>
+    </div>
+    <div style="flex:1; max-width:400px; display:flex; gap:10px;">
+        <select id="lab-major-filter" style="flex:1;">
+            <option value="">All Departments</option>
+            <option value="Mechanical">Mechanical Engineering</option>
+            <option value="Computer">Computer Science</option>
+            <option value="Bio">Bio & Brain Engineering</option>
+            <option value="Electrical">Electrical Engineering</option>
+            <option value="Physics">Physics</option>
+        </select>
+        <button class="btn primary" onclick="loadLabs()">{{ t.btn_search }}</button>
+    </div>
+</div>
+
+<div id="labs-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:25px;">
+    <!-- Loaded via API -->
+</div>
+
+<template id="lab-card-tmpl">
+    <div class="card" style="padding:30px; border-radius:24px; border-left:4px solid var(--cyan);">
+        <div style="font-size:0.65rem; font-weight:900; color:var(--text-muted); text-transform:uppercase; margin-bottom:10px;" class="lab-major"></div>
+        <h4 class="lab-name" style="font-size:1.2rem; margin-bottom:12px; font-family:var(--font-heading);"></h4>
+        <p class="lab-focus" style="font-size:0.85rem; color:var(--text-muted); margin-bottom:20px; line-height:1.6;"></p>
+        
+        <div style="display:flex; align-items:center; gap:10px; margin-top:auto; padding-top:20px; border-top:1px solid var(--border);">
+            <div style="width:30px; height:30px; border-radius:50%; background:var(--cyan-glow); display:flex; align-items:center; justify-content:center; font-size:0.8rem;">👨‍🔬</div>
+            <div style="font-size:0.8rem;">
+                <div style="font-weight:700;" class="lab-pi"></div>
+                <div style="font-size:0.65rem; opacity:0.6;">Principal Investigator</div>
+            </div>
+        </div>
+        <a href="" target="_blank" class="lab-link btn secondary" style="width:100%; margin-top:20px; text-align:center; padding:10px; text-decoration:none; display:block;">LAB SITE ↗</a>
+    </div>
+</template>
+
+<script>
+async function loadLabs() {
+    const grid = document.getElementById('labs-grid');
+    const tmpl = document.getElementById('lab-card-tmpl');
+    const major = document.getElementById('lab-major-filter').value;
+    
+    const res = await fetch(`/api/research/labs?major=${major}`).then(r=>r.json());
+    
+    if(res.ok) {
+        grid.innerHTML = '';
+        if(res.labs.length === 0) {
+            grid.innerHTML = '<div style="grid-column: span 3; text-align:center; padding:40px; color:var(--text-muted); opacity:0.5;">No labs found for this department yet. We are adding more daily!</div>';
+        }
+        res.labs.forEach(l => {
+            const clone = tmpl.content.cloneNode(true);
+            clone.querySelector('.lab-name').innerText = l.name;
+            clone.querySelector('.lab-major').innerText = l.major;
+            clone.querySelector('.lab-focus').innerText = l.focus;
+            clone.querySelector('.lab-pi').innerText = l.pi;
+            clone.querySelector('.lab-link').href = l.link;
+            grid.appendChild(clone);
+        });
+    }
+}
+
+loadLabs();
+</script>
+{% endblock %}

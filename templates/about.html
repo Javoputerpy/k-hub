@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block page_title %}{{ t.tab_about if t.tab_about else "About K-HUB" }}{% endblock %}
+{% block content %}
+<div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 50px; align-items: center; padding-top: 20px;">
+    <!-- LEFT: Mission & Content -->
+    <div>
+        <h1 style="font-size: 3.5rem; font-weight: 800; margin-bottom: 20px; line-height: 1; letter-spacing: -2px;">{{ t.abu_title }}.</h1>
+        <p style="font-size: 1.1rem; color: var(--text-muted); line-height: 1.8; margin-bottom: 40px;">
+            K-Hub is the world's first AI-accelerated academic ecosystem designed specifically for KAIST applicants. 
+        </p>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+            <div class="glass-container" style="padding: 25px; border-radius: 24px;">
+                <h4 style="color: var(--cyan); margin-bottom: 10px;">🎯 {{ t.abu_ai }}</h4>
+                <p style="font-size: 0.8rem; opacity: 0.7;">Real-time verification of certificates using AI technology.</p>
+            </div>
+            <div class="glass-container" style="padding: 25px; border-radius: 24px;">
+                <h4 style="color: var(--cyan); margin-bottom: 10px;">📜 {{ t.abu_cv }}</h4>
+                <p style="font-size: 0.8rem; opacity: 0.7;">Share your academic journey through a professional link.</p>
+            </div>
+            <div class="glass-container" style="padding: 25px; border-radius: 24px;">
+                <h4 style="color: var(--cyan); margin-bottom: 10px;">🎤 {{ t.abu_mock }}</h4>
+                <p style="font-size: 0.8rem; opacity: 0.7;">Practice rigorous interview questions tailored for KAIST.</p>
+            </div>
+            <div class="glass-container" style="padding: 25px; border-radius: 24px;">
+                <h4 style="color: var(--cyan); margin-bottom: 10px;">📍 {{ t.abu_road }}</h4>
+                <p style="font-size: 0.8rem; opacity: 0.7;">Customized admission timelines for the academic year.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT: Visual Wow -->
+    <div style="position: relative;">
+        <div style="background: linear-gradient(135deg, var(--cyan), transparent); width: 400px; height: 400px; position: absolute; border-radius: 50%; filter: blur(120px); opacity: 0.15; top: -10%; right: -10%;"></div>
+        <div class="glass-container" style="padding: 0; border-radius: 40px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 40px 80px rgba(0,0,0,0.4);">
+            <div style="height: 300px; background: url('/static/images/campus_vibe.png') center/cover; position: relative;">
+                <div style="position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.6), transparent);"></div>
+                <div style="position: absolute; bottom: 30px; left: 30px; text-align: left;">
+                    <span class="badge" style="margin-bottom: 10px; background: var(--cyan); color: white; border: none;">CAMPUS VIBES</span>
+                    <h3 style="color: white; margin: 0; font-family: var(--font-heading);">THE KAIST WAY</h3>
+                </div>
+            </div>
+            <div style="padding: 35px; text-align: left;">
+                <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.7; margin: 0;">
+                    Built on a <strong>Standalone K-Hub</strong> architecture, our platform is designed to scale with your ambitions. 
+                    From the first draft of your SOP to the final interview stage, we are with you.
+                </p>
+                <div style="margin-top: 25px; display: flex; gap: 10px; align-items: center;">
+                    <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--deep-dark); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">🏛️</div>
+                    <div>
+                        <div style="font-size: 0.75rem; font-weight: 800;">Daejeon Headquarters</div>
+                        <div style="font-size: 0.65rem; color: var(--text-muted);">Main Campus Hub</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div style="margin-top: 100px; padding-top: 60px; border-top: 1px solid var(--border);">
+    <h2 style="font-size: 2.5rem; font-weight: 800; margin-bottom: 10px; text-align: center;">{{ t.abu_kaist_title }}</h2>
+    <p style="text-align: center; color: var(--text-muted); max-width: 700px; margin: 0 auto 60px;">{{ t.abu_kaist_desc }}</p>
+
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px;">
+        <!-- Ranking -->
+        <div class="glass-container" style="padding: 35px; border-radius: 32px; border-bottom: 3px solid var(--cyan);">
+            <div style="font-size: 2.5rem; margin-bottom: 20px;">🏆</div>
+            <h4 style="margin-bottom: 15px; font-family: 'Space Grotesk', sans-serif;">{{ t.abu_ranking }}</h4>
+            <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.6;">{{ t.abu_ranking_desc }}</p>
+        </div>
+
+        <!-- Research -->
+        <div class="glass-container" style="padding: 35px; border-radius: 32px; border-bottom: 3px solid var(--cyan);">
+            <div style="font-size: 2.5rem; margin-bottom: 20px;">⚡</div>
+            <h4 style="margin-bottom: 15px; font-family: 'Space Grotesk', sans-serif;">{{ t.abu_research }}</h4>
+            <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.6;">{{ t.abu_research_desc }}</p>
+        </div>
+
+        <!-- Global -->
+        <div class="glass-container" style="padding: 35px; border-radius: 32px; border-bottom: 3px solid var(--cyan);">
+            <div style="font-size: 2.5rem; margin-bottom: 20px;">🌐</div>
+            <h4 style="margin-bottom: 15px; font-family: 'Space Grotesk', sans-serif;">{{ t.abu_global }}</h4>
+            <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.6;">{{ t.abu_global_desc }}</p>
+        </div>
+    </div>
+
+    <!-- Extra Fact Section -->
+    <div class="glass-container" style="margin-top: 50px; padding: 40px; border-radius: 40px; display: flex; align-items: center; gap: 40px; background: rgba(37,99,235,0.05);">
+        <div style="flex: 1;">
+            <span class="badge" style="margin-bottom: 15px;">DID YOU KNOW?</span>
+            <h3 style="margin-bottom: 15px;">Daejeon: Silicon Valley of Korea</h3>
+            <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.7;">
+                KAIST is located in Daedeok Innopolis, the research and development capital of South Korea. 
+                Our students have direct access to hundreds of private and public research institutes, 
+                fostering an unmatched ecosystem for innovation.
+            </p>
+        </div>
+        <div style="width: 350px; height: 200px; background: url('/static/images/campus_vibe.png') center/cover; border-radius: 24px; box-shadow: 0 30px 60px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); position: relative; overflow: hidden;">
+            <div style="position: absolute; inset: 0; background: radial-gradient(circle at center, transparent, rgba(0,0,0,0.3));"></div>
+        </div>
+    </div>
+</div>
+
+<div style="margin-top: 100px; text-align: center; border-top: 1px solid var(--border); padding-top: 40px; opacity: 0.5;">
+    <p style="font-size: 0.7rem; color: var(--text-muted); letter-spacing: 2px; text-transform: uppercase;">Engineered for Excellence • K-HUB v12.0</p>
+</div>
+{% endblock %}

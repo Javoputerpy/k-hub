@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}K-HUB | Premium KAIST App{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}?v=2.0.0">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+    <style>
+        /* Premium Custom Scrollbars */
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.01); }
+        ::-webkit-scrollbar-thumb { background: rgba(37,99,235,0.2); border-radius: 10px; border: 2px solid transparent; background-clip: content-box; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--cyan); }
+        
+        /* Smooth Scrolling */
+        html { scroll-behavior: smooth; }
+        
+        .time-unit { display: flex; align-items: baseline; gap: 2px; }
+        .time-unit label { font-size: 0.55rem; opacity: 0.7; font-weight: 400; margin-left: 2px; }
+        #countdown-display span { 
+            color: #60a5fa; 
+            text-shadow: 0 0 10px rgba(96,165,251,0.5); 
+            font-size: 1.1rem; 
+            font-weight: 800;
+        }
+
+        #deadline-ticker {
+            position: fixed;
+            top: 15px;
+            left: calc(50% + 130px); /* Offset by half sidebar width to center in content */
+            transform: translateX(-50%);
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(16px) saturate(180%);
+            -webkit-backdrop-filter: blur(16px) saturate(180%);
+            color: white;
+            padding: 12px 28px;
+            border-radius: 50px;
+            font-size: 0.72rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(255,255,255,0.05);
+            z-index: 2000;
+            white-space: nowrap;
+            transition: 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+            overflow: hidden;
+        }
+        #deadline-ticker::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%; width: 50%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            transform: skewX(-25deg);
+            animation: shimmer 4s infinite;
+        }
+        @keyframes shimmer {
+            0% { left: -100%; }
+            30%, 100% { left: 200%; }
+        }
+        #deadline-ticker:hover {
+            transform: translateX(-50%) translateY(-2px) scale(1.03);
+            background: rgba(15, 23, 42, 0.85);
+            border-color: rgba(37, 99, 235, 0.5);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 0 20px rgba(37, 99, 235, 0.2);
+        }
+        @media print { .no-print { display: none !important; } }
+
+        /* SLATE MINIMAL THEME OVERRIDES */
+        body.theme-minimal { background: #0a0a0a; --card: #151515; --border: #222; }
+        body.theme-minimal .glass-container, 
+        body.theme-minimal .card, 
+        body.theme-minimal .sidebar { backdrop-filter: none; background: var(--card); border: 1px solid var(--border); box-shadow: none; border-radius: 12px; }
+        body.theme-minimal .nav-link.active { background: #222; border: 1px solid #333; }
+        body.theme-minimal .btn.primary { border-radius: 8px; box-shadow: none; }
+    </style>
+</head>
+<body class="{% if user and user.theme == 'minimal' %}theme-minimal{% endif %}">
+
+
+    <script>
+        function updateCountdown() {
+            const target = new Date("{{ next_deadline.date }} 09:00:00").getTime();
+            const now = new Date().getTime();
+            const diff = target - now;
+
+            if (diff > 0) {
+                const months = Math.floor(diff / (1000 * 60 * 60 * 24 * 30.44)); // Average month
+                const days = Math.floor((diff % (1000 * 60 * 60 * 24 * 30.44)) / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const secs = Math.floor((diff % (1000 * 60)) / 1000);
+
+                document.getElementById("cd-months").innerText = months.toString().padStart(2, '0');
+                document.getElementById("cd-days").innerText = days.toString().padStart(2, '0');
+                document.getElementById("cd-hours").innerText = hours.toString().padStart(2, '0');
+                document.getElementById("cd-mins").innerText = mins.toString().padStart(2, '0');
+                document.getElementById("cd-secs").innerText = secs.toString().padStart(2, '0');
+            }
+        }
+        setInterval(updateCountdown, 1000);
+        updateCountdown();
+    </script>
+
+    <!-- ══ SIDEBAR NAVIGATION ══ -->
+    <nav class="sidebar">
+        <div class="brand">K-HUB .</div>
+        <div class="nav-links">
+            <a href="/" class="nav-link {% if active_page == 'skills' %}active{% endif %}">⌘ {{ t.tab_skills }}</a>
+            <a href="/predictor" class="nav-link {% if active_page == 'predictor' %}active{% endif %}">🎯 {{ t.tab_predictor }}</a>
+            <a href="/sop" class="nav-link {% if active_page == 'sop' %}active{% endif %}">✍️ {{ t.tab_sop }}</a>
+            <a href="/interview" class="nav-link {% if active_page == 'interview' %}active{% endif %}">🎤 {{ t.tab_interview }}</a>
+            <a href="/scholarships" class="nav-link {% if active_page == 'scholarships' %}active{% endif %}">🎓 {{ t.tab_scholarships }}</a>
+            <a href="/roadmap" class="nav-link {% if active_page == 'roadmap' %}active{% endif %}">🗺 {{ t.tab_roadmap }}</a>
+            <a href="/network" class="nav-link {% if active_page == 'network' %}active{% endif %}">🌍 {{ t.tab_network }}</a>
+            <a href="/portfolio" class="nav-link {% if active_page == 'portfolio' %}active{% endif %}">📁 {{ t.tab_portfolio }}</a>
+            <a href="/documents" class="nav-link {% if active_page == 'documents' %}active{% endif %}">📜 {{ t.tab_docs }}</a>
+            <a href="/labs" class="nav-link {% if active_page == 'labs' %}active{% endif %}">🔬 {{ t.tab_labs }}</a>
+            <a href="/courses" class="nav-link {% if active_page == 'courses' %}active{% endif %}">🎓 {{ t.tab_courses }}</a>
+            <a href="/stats" class="nav-link {% if active_page == 'stats' %}active{% endif %}">📊 {{ t.tab_stats }}</a>
+            <a href="/about" class="nav-link {% if active_page == 'about' %}active{% endif %}">ℹ️ {{ t.tab_about }}</a>
+            <a href="/settings" class="nav-link {% if active_page == 'settings' %}active{% endif %}">⚙️ {{ t.tab_settings }}</a>
+            {% if user and user.is_admin %}
+            <a href="/admin" class="nav-link {% if active_page == 'admin' %}active{% endif %}">🛠 {{ t.tab_admin }}</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <!-- ══ MAIN CONTENT SHELL ══ -->
+    <main class="main-content">
+        <!-- DEADLINE HEADER (FLOATING PILL) -->
+        <div id="deadline-ticker">
+            <div class="pulse-dot"></div>
+            <span style="opacity: 0.9; letter-spacing: 0.5px;">{{ next_deadline.name|upper }} <span style="color:var(--cyan);">SPRING 2027</span></span>
+            <div style="width: 1px; height: 15px; background: rgba(255,255,255,0.2);"></div>
+            <div id="countdown-display" style="display: flex; gap: 12px; font-family: 'Space Grotesk', sans-serif; font-size: 0.85rem;">
+                <div class="time-unit"><span id="cd-months">00</span><label>{{ t.mo }}</label></div>
+                <div class="time-unit"><span id="cd-days">00</span><label>{{ t.d }}</label></div>
+                <div class="time-unit"><span id="cd-hours">00</span><label>{{ t.h }}</label></div>
+                <div class="time-unit"><span id="cd-mins">00</span><label>{{ t.m }}</label></div>
+                <div class="time-unit"><span id="cd-secs">00</span><label>{{ t.s }}</label></div>
+            </div>
+        </div>
+        <!-- HEADER -->
+        <header class="topbar">
+            <div class="page-title">{% block page_title %}Dashboard{% endblock %}</div>
+            <div class="header-actions">
+                <select id="lang-btn" class="btn" style="background:transparent; border-color:var(--border); outline:none; appearance:none; padding-right:32px; cursor:pointer;">
+                    <option value="uz" {% if lang == 'uz' %}selected{% endif %}>🇺🇿 UZ</option>
+                    <option value="en" {% if lang == 'en' %}selected{% endif %}>🇬🇧 EN</option>
+                    <option value="kr" {% if lang == 'kr' %}selected{% endif %}>🇰🇷 KR</option>
+                </select>
+                <div id="user-profile-btn" style="display:none;" class="btn">👤 <span id="username-display">Guest</span></div>
+                <button class="btn primary" id="login-trigger">{{ t.login_btn }}</button>
+            </div>
+        </header>
+
+        <!-- DYNAMIC CONTENT -->
+        <div class="content-area">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <!-- ══ LOGIN MODAL ══ -->
+    <div id="auth-modal">
+        <div class="auth-box">
+            <h2>K-HUB SECURE</h2>
+            <p style="margin-bottom:20px;">Connect your Telegram account to sync your application progress securely.</p>
+            
+            <div style="margin-bottom:24px;">
+                <input type="text" id="otp-input" placeholder="6-DIGIT CODE" maxlength="6" 
+                       style="width:100%; padding:15px; border-radius:12px; border:1px solid var(--border); background:rgba(0,0,0,0.02); text-align:center; font-size:1.2rem; font-weight:800; letter-spacing:4px; outline:none; margin-bottom:12px;">
+                <button onclick="verifyOTP()" class="btn secondary" style="width:100%; padding:14px; font-weight:800;">VERIFY & LOGIN</button>
+            </div>
+
+            <p style="font-size:0.75rem; color:var(--text-muted); margin-bottom:10px;">Don't have a code? Get it from our bot:</p>
+            <a href="https://t.me/next_kaist_bot" target="_blank" style="text-decoration:none;">
+                <button class="btn" style="width:100%; padding:12px; font-size:0.85rem; border-color:var(--cyan); color:var(--cyan);">@next_kaist_bot</button>
+            </a>
+            <div class="auth-skip" id="auth-skip-btn">Continue as Guest →</div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}?v=2.0.0"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block page_title %}{{ t.tab_labs }}{% endblock %}
+{% block content %}
+<div class="glass-container" style="padding: 30px; border-radius: 24px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center;">
+    <p style="color:var(--text-muted); margin:0; font-size:0.85rem;">{{ t.labs_desc }}</p>
+    <div style="display: flex; gap: 10px;">
+        <span class="badge blue">AI / ML</span>
+        <span class="badge green">BIO</span>
+        <span class="badge orange">NANO</span>
+    </div>
+</div>
+
+<div id="labs-content" class="grid-3" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 25px;">
+    <!-- Fetched via JS -->
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        fetch('/api/labs/match', {method:'POST'}).then(r=>r.json()).then(data => {
+            const lc = document.getElementById('labs-content');
+            const allLabs = [...data.db_labs, ...data.ai_labs];
+            if(allLabs.length === 0) {
+                lc.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:40px; opacity:0.5;">No matches found for your field. Update your profile!</div>';
+                return;
+            }
+            lc.innerHTML = allLabs.map(lab => `
+                <div class="card lab-card">
+                    <div class="lab-card-glow" style="background: ${lab.focus ? 'var(--cyan)' : 'var(--gold)'};"></div>
+                    <h3 style="margin-top: 0; font-size: 1.1rem; color: var(--text-main);">${lab.name}</h3>
+                    <p style="font-size: 0.75rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 20px; flex:1;">${lab.focus || lab.desc || 'Researching advanced STEM solutions.'}</p>
+                    
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 15px; border-top: 1px solid var(--border);">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <div class="lab-card-pi-icon">PI</div>
+                            <div style="font-size: 0.65rem; font-weight: 700; color: var(--text-main);">${lab.pi || 'KAIST Prof.'}</div>
+                        </div>
+                        <button onclick="generateEmail('${lab.name}')" class="badge primary">WRITE EMAIL</button>
+                    </div>
+                </div>
+            `).join('');
+        });
+    });
+
+    function generateEmail(labName) {
+        localStorage.setItem('target_lab', labName);
+        window.location.href = '/email';
+    }
+</script>
+
+<style>
+    .lab-card:hover { transform: translateY(-10px); border-color: var(--cyan); box-shadow: 0 20px 40px rgba(0,240,255,0.1); }
+</style>
+{% endblock %}

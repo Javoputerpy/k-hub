@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}Emailer | K-HUB{% endblock %}
+{% block page_title %}{{ t.tab_email }}{% endblock %}
+
+{% block content %}
+<div class="grid-2">
+    <div class="glass-container" style="padding:40px;">
+        <h3 style="font-family:var(--font-heading); color:var(--cyan); margin-bottom:20px;">{{ t.email_prof }}</h3>
+        <p style="color:var(--text-muted); margin-bottom:30px;">Generate a polished, professional email to a professor for research opportunities or admission inquiries.</p>
+        
+        <div class="cms-form">
+            <label>Professor Name & Title</label>
+            <input type="text" id="email-prof-name" placeholder="e.g. Prof. Sangyup Lee">
+            
+            <label>Topic / Purpose</label>
+            <select id="email-topic">
+                <option value="Research internship inquiry">Research Internship Inquiry</option>
+                <option value="Joining the lab for Graduate Studies">Joining Lab for Masters/PhD</option>
+                <option value="Feedback on my research proposal">Feedback on Proposal</option>
+                <option value="Inquiry about current lab openings">Lab Openings Discovery</option>
+            </select>
+            
+            <label>Current Status</label>
+            <input type="text" id="email-status" placeholder="e.g. 3rd year Undergrad at KAIST">
+            
+            <button class="btn primary" style="width:100%; padding:15px; margin-top:20px; font-weight:800;" onclick="generateEmail()">✨ {{ t.btn_generate }} EMAIL</button>
+        </div>
+    </div>
+
+    <div class="glass-container" style="background:#0a0a0a; border-color:rgba(37,99,235,0.2); position:relative;">
+        <div id="email-loader" style="display:none; position:absolute; inset:0; background:rgba(0,0,0,0.8); z-index:10; align-items:center; justify-content:center; flex-direction:column; border-radius:inherit;">
+            <div style="width:40px; height:40px; border:3px solid var(--cyan); border-top-color:transparent; border-radius:50%; animation:spin 1s linear infinite;"></div>
+            <p style="margin-top:15px; font-size:0.8rem; color:var(--cyan); letter-spacing:1px;">AI WRITING...</p>
+        </div>
+
+        <div id="email-result" style="display:none; height:100%; display:flex; flex-direction:column;">
+            <div style="padding:15px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:0.65rem; font-weight:900; color:var(--text-muted);">OUTGOING DRAFT</span>
+                <button class="btn secondary" style="padding:5px 12px; font-size:0.7rem;" onclick="copyEmail()">📋 COPY</button>
+            </div>
+            <div style="padding:20px; flex:1; overflow-y:auto;">
+                <div id="res-subject" style="font-weight:700; color:var(--cyan); margin-bottom:15px; font-size:0.95rem;"></div>
+                <div id="res-body" style="white-space:pre-wrap; font-size:0.85rem; color:rgba(255,255,255,0.8); line-height:1.7;"></div>
+            </div>
+        </div>
+        
+        <div id="email-empty" style="height:100%; display:flex; align-items:center; justify-content:center; text-align:center; padding:40px;">
+            <div>
+                <span style="font-size:3rem; opacity:0.1; display:block; margin-bottom:20px;">📧</span>
+                <p style="color:var(--text-muted); font-size:0.8rem;">Your professional draft will appear here.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const targetLab = localStorage.getItem('target_lab');
+    if (targetLab) {
+        document.getElementById('email-prof-name').value = targetLab;
+        localStorage.removeItem('target_lab'); // Clear after use
+    }
+});
+
+async function generateEmail() {
+    const prof = document.getElementById('email-prof-name').value;
+    const topic = document.getElementById('email-topic').value;
+    const status = document.getElementById('email-status').value;
+    
+    if(!prof) { alert("Please enter professor name or lab"); return; }
+    
+    document.getElementById('email-loader').style.display = 'flex';
+    document.getElementById('email-empty').style.display = 'none';
+    document.getElementById('email-result').style.display = 'none';
+    
+    try {
+        const res = await fetch('/api/email/generate', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({lab: prof, topic: topic, status: status})
+        }).then(r=>r.json());
+        
+        document.getElementById('res-subject').innerText = `Subject: ${res.subject}`;
+        document.getElementById('res-body').innerText = res.body;
+        document.getElementById('email-result').style.display = 'flex';
+    } catch(e) {
+        alert("AI Error. Please try again.");
+        document.getElementById('email-empty').style.display = 'flex';
+    } finally {
+        document.getElementById('email-loader').style.display = 'none';
+    }
+}
+
+function copyEmail() {
+    const text = document.getElementById('res-body').innerText;
+    navigator.clipboard.writeText(text);
+    alert("Email copied to clipboard!");
+}
+</script>
+{% endblock %}

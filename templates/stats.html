@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block page_title %}{{ t.tab_stats }}{% endblock %}
+{% block content %}
+<div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 30px; align-items: start;">
+    <!-- LEFT: Image & Profile -->
+    <div class="glass-container" style="padding: 40px; border-radius: 32px; text-align: center;">
+        <img src="/C:/Users/user/.gemini/antigravity/brain/8cf7075d-ad04-40c0-b001-4c9c49e439d0/stats_growth_illustration_v10_0_1775068053685.png" style="width: 100%; border-radius: 20px; margin-bottom: 30px; filter: drop-shadow(0 20px 40px rgba(96,165,251,0.2));">
+        <h2 id="stats-name" style="margin-bottom: 5px;">...</h2>
+        <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 25px;">{{ t.tab_stats }} Dashboard</div>
+        
+        <div style="display: flex; justify-content: space-around; background: rgba(0,0,0,0.02); padding: 20px; border-radius: 20px;">
+            <div><label style="font-size: 0.6rem; font-weight: 900; opacity: 0.5;">LEVEL</label><div id="stats-level" style="font-weight: 800; font-size: 1.5rem; color: var(--cyan);">0</div></div>
+            <div style="width: 1px; background: var(--border);"></div>
+            <div><label style="font-size: 0.6rem; font-weight: 900; opacity: 0.5;">XP</label><div id="stats-xp" style="font-weight: 800; font-size: 1.5rem; color: var(--cyan);">0</div></div>
+        </div>
+    </div>
+
+    <!-- RIGHT: Analytics, Badges & Leaderboard -->
+    <div style="display: flex; flex-direction: column; gap: 30px;">
+        <div class="glass-container" style="padding: 35px; border-radius: 32px;">
+            <h3>📊 {{ t.adm_prob }}</h3>
+            <div style="margin-top: 25px;">
+                <div style="margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 8px; font-weight: 700;">
+                        <span>{{ t.acad_str }}</span><span id="strength-val">0%</span>
+                    </div>
+                    <div style="height: 6px; background: rgba(0,0,0,0.05); border-radius: 10px; overflow: hidden;">
+                        <div id="strength-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #3b82f6, #60a5fa); transition: 1s cubic-bezier(0.4, 0, 0.2, 1);"></div>
+                    </div>
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 8px; font-weight: 700;">
+                        <span>{{ t.port_div }}</span><span id="diversity-val">0%</span>
+                    </div>
+                    <div style="height: 6px; background: rgba(0,0,0,0.05); border-radius: 10px; overflow: hidden;">
+                        <div id="diversity-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #10b981, #34d399); transition: 1s 0.2s cubic-bezier(0.4, 0, 0.2, 1);"></div>
+                    </div>
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 8px; font-weight: 700;">
+                        <span>{{ t.comp_read }}</span><span id="compliance-val">0%</span>
+                    </div>
+                    <div style="height: 6px; background: rgba(0,0,0,0.05); border-radius: 10px; overflow: hidden;">
+                        <div id="compliance-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #f59e0b, #fbbf24); transition: 1s 0.4s cubic-bezier(0.4, 0, 0.2, 1);"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- NEW: Global Leaderboard -->
+        <div class="glass-container" style="padding: 35px; border-radius: 32px; background: linear-gradient(135deg, rgba(37,99,235,0.05), rgba(255,255,255,0.02));">
+            <h3 style="display:flex; justify-content:space-between; align-items:center;">
+                <span>🔝 GLOBAL LEADERBOARD</span>
+                <span style="font-size:0.6rem; color:var(--text-muted);">TOP 10 CANDIDATES</span>
+            </h3>
+            <div id="leaderboard-list" style="margin-top:20px; display:flex; flex-direction:column; gap:12px;">
+                <!-- Filled by JS -->
+            </div>
+        </div>
+
+        <div class="glass-container" style="padding: 35px; border-radius: 32px;">
+            <h3>🏆 {{ t.bad_unlock }}</h3>
+            <div id="badges-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-top: 20px;">
+                <!-- Badges will be filled by JS -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        fetch('/api/me').then(r=>r.json()).then(data => {
+            if(!data.ok) return;
+            document.getElementById('stats-name').innerText = data.user.name;
+            document.getElementById('stats-level').innerText = data.user.level;
+            document.getElementById('stats-xp').innerText = data.user.xp;
+
+            // Animate Bars - Academic Strength based on real academic scores
+            const gpaScore = (data.user.gpa || 0); // Assuming GPA is already scaled to 100
+            const ieltsScore = ((data.user.ielts || 0) / 9.0) * 100;
+            // 70% weight to GPA, 30% weight to IELTS
+            const strength = Math.min(100, Math.round((gpaScore * 0.70) + (ieltsScore * 0.30)));
+            
+            document.getElementById('strength-bar').style.width = strength + '%';
+            document.getElementById('strength-val').innerText = strength + '%';
+
+            // Fetch Portfolio for diversity
+            fetch('/api/portfolio').then(r=>r.json()).then(portData => {
+                const portItems = portData.length || 0;
+                const diversity = Math.min(100, ((data.user.awards || 0) * 15) + (portItems * 10));
+                document.getElementById('diversity-bar').style.width = diversity + '%';
+                document.getElementById('diversity-val').innerText = diversity + '%';
+            }).catch(() => {
+                const diversity = Math.min(100, (data.user.awards || 0) * 20);
+                document.getElementById('diversity-bar').style.width = diversity + '%';
+                document.getElementById('diversity-val').innerText = diversity + '%';
+            });
+
+            // Calculate actual compliance from core docs
+            const dict = data.docs_dict || {};
+            const coreKeys = ['Passport', 'Transcript', 'Recommendation', 'SOP'];
+            let checkedDocs = 0;
+            coreKeys.forEach(k => {
+                if (dict[k] && dict[k].checked === 1) checkedDocs++;
+            });
+            const compliance = Math.round((checkedDocs / 4) * 100);
+            
+            document.getElementById('compliance-bar').style.width = compliance + '%';
+            document.getElementById('compliance-val').innerText = compliance + '%';
+
+            // Load Badges
+            const bg = document.getElementById('badges-grid');
+            const earned = data.user.badges || [];
+            bg.innerHTML = earned.map(b => `
+                <div style="text-align:center; padding:15px; border-radius:15px; background:rgba(37,99,235,0.05); border:1px solid rgba(37,99,235,0.1); animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+                    <div style="font-size:1.8rem; margin-bottom:5px;">${b.icon}</div>
+                    <div style="font-size:0.55rem; font-weight:900; color:var(--text-main); letter-spacing:0.5px;">${b.label.toUpperCase()}</div>
+                </div>
+            `).join('') || '<div style="grid-column: span 4; text-align:center; opacity:0.5; font-size:0.8rem;">No badges earned yet. Complete your profile!</div>';
+
+            // Load Leaderboard
+            fetch('/api/leaderboard').then(r=>r.json()).then(lb => {
+                const list = document.getElementById('leaderboard-list');
+                list.innerHTML = lb.map(u => `
+                    <div style="display:flex; align-items:center; gap:15px; padding:12px; border-radius:16px; background: ${u.username === data.user.username ? 'rgba(37,99,235,0.1)' : 'rgba(0,0,0,0.02)'}; border: 1px solid ${u.username === data.user.username ? 'var(--cyan)' : 'transparent'}">
+                        <div style="width:24px; font-weight:900; color:var(--text-muted); font-size:0.8rem;">#${u.rank}</div>
+                        <img src="${u.avatar}" style="width:32px; height:32px; border-radius:10px; object-fit:cover;">
+                        <div style="flex:1;">
+                            <div style="font-size:0.85rem; font-weight:700;">${u.name}</div>
+                            <div style="font-size:0.6rem; color:var(--text-muted);">Level ${u.level} Researcher</div>
+                        </div>
+                        <div style="font-size:0.8rem; font-weight:800; color:var(--cyan);">${u.xp} XP</div>
+                    </div>
+                `).join('');
+            });
+        });
+    });
+</script>
+{% endblock %}

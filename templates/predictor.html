@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block page_title %}{{ t.tab_predictor }}{% endblock %}
+{% block content %}
+<div class="glass-container" style="max-width: 700px; margin: 0 auto; text-align: center; padding:50px;">
+    <div style="font-size: 4rem; margin-bottom: 20px;">🎯</div>
+    <h3 style="font-family:var(--font-heading); font-size:2rem; margin-bottom:15px; color:var(--cyan);">{{ t.pred_title }}</h3>
+    <p style="margin-bottom: 35px; color:var(--text-muted); line-height:1.6;">Our AI model analyzes your current GPA, IELTS, and portfolio density against historical KAIST acceptance data to estimate your chances.</p>
+    
+    <button id="predict-btn" class="btn primary" style="width: 100%; padding: 18px; font-size: 1.1rem; font-weight:800;">🚀 {{ t.pred_analyze }}</button>
+    
+    <div id="predict-result" style="margin-top: 40px; text-align:left;"></div>
+</div>
+
+<script>
+    document.getElementById('predict-btn').addEventListener('click', async () => {
+        const btn = document.getElementById('predict-btn');
+        const res = document.getElementById('predict-result');
+        btn.disabled = true;
+        btn.innerText = "Deep Analysis in Progress...";
+        res.innerHTML = '<div class="glass-container" style="background:rgba(0,0,0,0.02); padding:20px; text-align:center;">Analyzing academic metrics... 🧬</div>';
+        
+        try {
+            const r = await fetch('/api/predictor/predict', {method: 'POST'}).then(r=>r.json());
+            res.innerHTML = `
+                <div class="card" style="border-left:4px solid var(--cyan);">
+                    <h4 style="color:var(--cyan); margin-bottom:15px;">AI EVALUATION REPORT</h4>
+                    <p style="line-height:1.8; font-size:0.9rem;">${r.prediction.replace(/\n/g, '<br>')}</p>
+                </div>
+            `;
+        } catch(e) {
+            res.innerHTML = "Error connecting to AI analyst.";
+        }
+        btn.disabled = false;
+        btn.innerText = "RE-ANALYZE PROFILE";
+    });
+</script>
+{% endblock %}

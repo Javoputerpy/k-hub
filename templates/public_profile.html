@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ u.name }} | K-HUB Verified Portfolio</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #030408;
+            --accent: #2563eb;
+            --accent-glow: rgba(37,99,235,0.4);
+            --card-bg: rgba(255,255,255,0.03);
+            --border: rgba(255,255,255,0.08);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --glass: blur(20px);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+        body {
+            background: var(--bg);
+            color: var(--text-main);
+            font-family: 'Outfit', sans-serif;
+            line-height: 1.6;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(37,99,235,0.05) 0%, transparent 50%),
+                radial-gradient(circle at 90% 80%, rgba(37,99,235,0.05) 0%, transparent 50%);
+        }
+
+        .container { max-width: 1000px; margin: 0 auto; padding: 60px 24px; }
+
+        /* ── HEADER ── */
+        .header-card {
+            background: var(--card-bg);
+            backdrop-filter: var(--glass);
+            border: 1px solid var(--border);
+            border-radius: 40px;
+            padding: 50px;
+            display: flex;
+            align-items: center;
+            gap: 40px;
+            margin-bottom: 40px;
+            position: relative;
+        }
+
+        .avatar-box {
+            position: relative;
+            flex-shrink: 0;
+        }
+        .qr-code { position: absolute; top: 30px; right: 180px; width: 60px; height: 60px; border: 1px solid var(--border); padding: 5px; background: #fff; border-radius: 8px; }
+        .qr-code img { width: 100%; height: 100%; }
+
+        .avatar-main {
+            width: 180px;
+            height: 180px;
+            border-radius: 40px;
+            object-fit: cover;
+            border: 1px solid var(--border);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        }
+        .verified-badge {
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--accent);
+            color: #fff;
+            padding: 6px 16px;
+            border-radius: 50px;
+            font-size: 0.7rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 15px var(--accent-glow);
+            white-space: nowrap;
+        }
+
+        .profile-info h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 3.5rem;
+            letter-spacing: -2px;
+            line-height: 1;
+            margin-bottom: 12px;
+        }
+        .profile-info .field {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            font-weight: 400;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .profile-info .field::before { content: ''; width: 20px; height: 1px; background: var(--accent); }
+
+        .download-pdf {
+            position: absolute;
+            top: 30px;
+            right: 40px;
+            text-decoration: none;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: 0.2s;
+            background: rgba(255,255,255,0.05);
+            padding: 10px 20px;
+            border-radius: 50px;
+            border: 1px solid var(--border);
+        }
+        .download-pdf:hover { color: #fff; background: var(--accent); border-color: var(--accent); }
+
+        /* ── STATS ── */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 50px;
+        }
+        .stat-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            padding: 24px;
+            border-radius: 24px;
+            text-align: center;
+            transition: 0.3s;
+        }
+        .stat-card:hover { border-color: var(--accent); background: rgba(37,99,235,0.02); }
+        .stat-label { font-size: 0.65rem; font-weight: 800; color: var(--text-muted); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 8px; }
+        .stat-value { font-size: 1.8rem; font-weight: 800; color: var(--accent); font-family: 'Space Grotesk', sans-serif; }
+
+        /* ── SECTIONS ── */
+        .section-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.5rem;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+        .portfolio-list {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .p-item {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            padding: 30px;
+            border-radius: 30px;
+            display: flex;
+            gap: 30px;
+            transition: 0.3s;
+        }
+        .p-item:hover { border-color: var(--accent); transform: translateX(10px); }
+        
+        .p-icon {
+            width: 60px; height: 60px; border-radius: 18px;
+            background: rgba(37,99,235,0.1);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem; flex-shrink: 0;
+        }
+
+        .p-content h3 { font-size: 1.25rem; margin-bottom: 8px; }
+        .p-content p { color: var(--text-muted); font-size: 0.95rem; line-height: 1.7; }
+        .p-meta { margin-top: 15px; display: flex; gap: 15px; }
+        .p-badge { font-size: 0.65rem; font-weight: 800; padding: 4px 12px; border-radius: 50px; background: rgba(255,255,255,0.05); color: var(--text-muted); }
+        .p-badge.ai { background: rgba(37,99,235,0.1); color: var(--accent); }
+
+        footer {
+            margin-top: 80px;
+            text-align: center;
+            padding-top: 40px;
+            border-top: 1px solid var(--border);
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        @media (max-width: 768px) {
+            .header-card { flex-direction: column; text-align: center; padding: 40px 24px; }
+            .profile-info h1 { font-size: 2.5rem; }
+            .stats-row { grid-template-columns: 1fr 1fr; }
+            .p-item { flex-direction: column; gap: 15px; }
+        }
+
+        @media print {
+            @page { margin: 1cm; size: A4; }
+            .no-print { display: none !important; }
+            body { background: #fff !important; color: #000 !important; padding: 0 !important; font-size: 10pt; }
+            .container { padding: 0; max-width: 100%; }
+            .header-card { 
+                padding: 20px; border-radius: 20px; margin-bottom: 20px; 
+                flex-direction: row !important; text-align: left !important; gap: 20px;
+                border: 1px solid #ddd; background: #fafafa !important;
+            }
+            .avatar-main { width: 100px !important; height: 100px !important; border-radius: 15px; }
+            .qr-code { position: absolute; right: 0; top: 0; width: 70px; height: 70px; border: 1px solid #ddd; }
+            .profile-info h1 { font-size: 2rem !important; }
+            .profile-info .field { font-size: 0.9rem !important; }
+            .stats-row { gap: 10px; margin-bottom: 20px; grid-template-columns: repeat(4, 1fr) !important; }
+            .stat-card { padding: 12px; border-radius: 12px; border: 1px solid #eee; }
+            .stat-value { font-size: 1.2rem !important; }
+            .stat-label { font-size: 0.5rem !important; }
+            .section-title { font-size: 1.1rem; margin-bottom: 15px; }
+            .p-item { 
+                padding: 15px; border-radius: 15px; gap: 15px; 
+                break-inside: avoid; border: 1px solid #f0f0f0; margin-bottom: 10px;
+            }
+            .p-icon { width: 40px; height: 40px; font-size: 1.2rem; }
+            .p-content h3 { font-size: 1rem; }
+            .p-content p { font-size: 0.8rem !important; line-height: 1.4; }
+            .p-meta { margin-top: 8px; }
+            footer { margin-top: 30px; padding-top: 15px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- HEADER -->
+        <header class="header-card">
+            <a href="javascript:window.print()" class="download-pdf no-print">📥 {{ t.pub_gen }}</a>
+            <div class="qr-code">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={{ request.url }}" alt="QR Code">
+                <div style="font-size:0.4rem; text-align:center; color:#000; margin-top:2px;">ONLINE CV</div>
+            </div>
+            
+            <div class="avatar-box">
+                {% if u.avatar_path and u.show_avatar %}
+                <img src="{{ u.avatar_path }}" class="avatar-main">
+                {% else %}
+                <img src="https://api.dicebear.com/8.x/initials/svg?seed={{ u.name }}" class="avatar-main">
+                {% endif %}
+                {% if u.passport_number %}
+                <div class="verified-badge">🛡️ K-HUB {{ t.pub_ver }}</div>
+                {% endif %}
+            </div>
+
+            <div class="profile-info">
+                <h1>{{ u.name }}</h1>
+                <div class="field">{{ u.field if u.field else 'Academic Candidate' }}</div>
+                <p style="margin-top: 5px; color: var(--text-muted); font-size: 0.85rem;">
+                    Level {{ u.level }} Researcher
+                </p>
+            </div>
+        </header>
+
+        <!-- STATS -->
+        <div class="stats-row" style="margin-bottom: 24px;">
+            <div class="stat-card">
+                <div class="stat-label">CUMULATIVE GPA</div>
+                <div class="stat-value">{{ "%.2f"|format(u.gpa|float) }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">IELTS BAND</div>
+                <div class="stat-value">{{ u.ielts if u.ielts > 0 else 'N/A' }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">VERIFIED AWARDS</div>
+                <div class="stat-value">{{ u.awards }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">XP POINTS</div>
+                <div class="stat-value">{{ u.xp }}</div>
+            </div>
+        </div>
+
+        <!-- BADGES -->
+        {% if u.badges %}
+        <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 50px; justify-content: center;">
+            {% for b in u.badges %}
+            <div style="background: rgba(37,99,235,0.1); border: 1px solid rgba(37,99,235,0.2); padding: 8px 16px; border-radius: 50px; display: flex; align-items: center; gap: 8px; backdrop-filter: blur(10px);">
+                <span>${ b.icon }</span>
+                <span style="font-size: 0.65rem; font-weight: 800; letter-spacing: 0.5px; color: var(--accent);">${ b.label.toUpperCase() }</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- ACHIEVEMENTS -->
+        <section class="section">
+            <h2 class="section-title">{{ t.pub_art }}</h2>
+            <div class="portfolio-list">
+                {% for item in items %}
+                <div class="p-item">
+                    <div class="p-icon">
+                        {% if 'CERT' in item.type.upper() %}📜
+                        {% elif 'PROJECT' in item.type.upper() %}💻
+                        {% elif 'PAPER' in item.type.upper() %}📝
+                        {% else %}💎{% endif %}
+                    </div>
+                    <div class="p-content">
+                        <h3 style="display:flex; justify-content:space-between; align-items:center;">
+                            {{ item.title }}
+                            <span style="font-size:0.6rem; color:var(--text-muted);">{{ item.date }}</span>
+                        </h3>
+                        <p id="desc-{{ loop.index }}" style="margin-top:4px;">{{ item.description }}</p>
+                        
+                        <div class="p-meta no-print">
+                            <span class="p-badge">{{ item.type.upper() }}</span>
+                            {% if item.verified %}
+                            <span class="p-badge ai">AI VALIDATED ✓</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <script>
+                    (function() {
+                        const el = document.getElementById('desc-{{ loop.index }}');
+                        let raw = el.innerText;
+                        try {
+                            const data = JSON.parse(raw);
+                            if (data.summary) {
+                                // Shorter summary for one-page CV
+                                el.innerText = data.summary.substring(0, 150) + (data.summary.length > 150 ? '...' : '');
+                                if (data.details) {
+                                    const details = Object.entries(data.details)
+                                        .map(([k,v]) => `${k.toUpperCase()}: ${v}`)
+                                        .join(' | ');
+                                    const small = document.createElement('div');
+                                    small.style.fontSize = '0.7rem';
+                                    small.style.marginTop = '4px';
+                                    small.style.opacity = '0.7';
+                                    small.innerText = details;
+                                    el.parentElement.appendChild(small);
+                                }
+                            }
+                        } catch(e) {
+                            if(raw.length > 180) el.innerText = raw.substring(0, 180) + '...';
+                        }
+                    })();
+                </script>
+                {% else %}
+                <div style="text-align:center; padding: 40px; color: var(--text-muted);">
+                    No verified achievements posted yet.
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <footer>
+            <p>Generated via <strong>K-HUB Academic Ecosystem</strong></p>
+            <p style="opacity: 0.5; margin-top: 5px;">Authenticated Digital Identity & Portfolio for KAIST 2026</p>
+        </footer>
+    </div>
+</body>
+</html>

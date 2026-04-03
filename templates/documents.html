@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% block title %}Required Documents | K-HUB{% endblock %}
+{% block page_title %}{{ t.tab_docs }}{% endblock %}
+
+{% block content %}
+<div class="glass-container" style="max-width: 1000px; margin: 0 auto; padding: 40px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px;">
+        <div>
+            <h1 style="font-size: 2.2rem; color: var(--text-main); font-family: var(--font-heading); margin-bottom: 8px;">{{ t.doc_comp }}</h1>
+            <p style="color: var(--text-muted); opacity: 0.8;">Ensure your KAIST application meets all formal requirements.</p>
+        </div>
+        <div style="background: rgba(37,99,235,0.05); padding: 15px 25px; border-radius: 20px; border: 1px solid rgba(37,99,235,0.1); text-align: right;">
+            <div style="font-size: 0.65rem; font-weight: 900; color: var(--cyan); letter-spacing: 1px;">{{ t.doc_score }}</div>
+            <div id="compliance-pct" style="font-size: 1.8rem; font-weight: 800; color: var(--text-main);">0%</div>
+        </div>
+    </div>
+
+    <div id="docs-list" style="display: grid; gap: 20px;">
+        <div class="doc-card" id="doc-passport">
+            <div class="doc-info">
+                <div class="doc-icon">🛂</div>
+                <div>
+                    <h3>{{ t.doc_pass }}</h3>
+                    <p>Clear scan of the identification page.</p>
+                </div>
+            </div>
+            <div class="doc-actions">
+                {% if docs.get('Passport') and docs['Passport']['checked'] == 1 %}
+                    <div class="status-badge verified" title="Verified Passport">VERIFIED</div>
+                {% else %}
+                    <div class="status-badge pending">PENDING</div>
+                {% endif %}
+                <button class="btn secondary" onclick="triggerUpload('Passport')">UPLOAD</button>
+            </div>
+        </div>
+
+        <div class="doc-card" id="doc-transcript">
+            <div class="doc-info">
+                <div class="doc-icon">🏫</div>
+                <div>
+                    <h3>{{ t.doc_trans }}</h3>
+                    <p>Official records of all grades.</p>
+                </div>
+            </div>
+            <div class="doc-actions">
+                {% if docs.get('Transcript') and docs['Transcript']['checked'] == 1 %}
+                    <div class="status-badge verified" title="Verified Transcript">VERIFIED</div>
+                {% elif docs.get('Diploma') and docs['Diploma']['checked'] == 1 %}
+                    <div class="status-badge verified" title="Verified Diploma">VERIFIED</div>
+                {% else %}
+                    <div class="status-badge pending">PENDING</div>
+                {% endif %}
+                <button class="btn secondary" onclick="triggerUpload('Transcript')">UPLOAD</button>
+            </div>
+        </div>
+
+        <div class="doc-card" id="doc-recommendation">
+            <div class="doc-info">
+                <div class="doc-icon">✉️</div>
+                <div>
+                    <h3>{{ t.doc_rec }}</h3>
+                    <p>Letters from teachers.</p>
+                </div>
+            </div>
+            <div class="doc-actions">
+                {% if docs.get('Recommendation') and docs['Recommendation']['checked'] == 1 %}
+                    <div class="status-badge verified" title="Verified Recommendation">VERIFIED</div>
+                {% else %}
+                    <div class="status-badge pending">PENDING</div>
+                {% endif %}
+                <button class="btn secondary" onclick="triggerUpload('Recommendation')">UPLOAD</button>
+            </div>
+        </div>
+
+        <div class="doc-card" id="doc-sop">
+            <div class="doc-info">
+                <div class="doc-icon">📝</div>
+                <div>
+                    <h3>{{ t.doc_sop }}</h3>
+                    <p>Study plan for KAIST.</p>
+                </div>
+            </div>
+            <div class="doc-actions">
+                {% if docs.get('SOP') and docs['SOP']['checked'] == 1 %}
+                    <div class="status-badge verified" title="Verified SOP">VERIFIED</div>
+                {% else %}
+                    <div class="status-badge pending">PENDING</div>
+                {% endif %}
+                <button class="btn secondary" onclick="triggerUpload('SOP')">UPLOAD</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Simple Hidden File Input -->
+<input type="file" id="doc-file-input" style="display: none;" onchange="handleFile(this)">
+
+<style>
+    .doc-card {
+        background: rgba(255,255,255,0.7);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.4);
+        padding: 24px;
+        border-radius: 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: 0.3s;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.02);
+    }
+    .doc-card:hover { transform: translateY(-5px); border-color: var(--cyan); box-shadow: 0 20px 40px rgba(37,99,235,0.05); }
+    
+    .doc-info { display: flex; align-items: center; gap: 20px; }
+    .doc-icon { width: 54px; height: 54px; background: #fff; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; border: 1px solid var(--border); }
+    .doc-info h3 { margin: 0; font-size: 1.1rem; color: var(--text-main); }
+    .doc-info p { margin: 4px 0 0; font-size: 0.8rem; color: var(--text-muted); }
+
+    .doc-actions { display: flex; align-items: center; gap: 15px; }
+    .status-badge { font-size: 0.6rem; font-weight: 900; padding: 4px 12px; border-radius: 20px; letter-spacing: 0.5px; }
+    .status-badge.pending { background: rgba(0,0,0,0.05); color: var(--text-muted); }
+    .status-badge.verified { background: linear-gradient(135deg, #10b981, #059669); color: white; box-shadow: 0 4px 12px rgba(16,185,129,0.2); }
+</style>
+
+<script>
+    let currentType = '';
+    function triggerUpload(type) {
+        const isLoggedIn = "{{ 'true' if user else 'false' }}" === "true";
+        if (!isLoggedIn) {
+            alert('Iltimos, hujjat yuklash uchun avval tizimga kiring (Telegram bot orqali). / Please login first.');
+            window.location.href = '/';
+            return;
+        }
+        currentType = type;
+        document.getElementById('doc-file-input').click();
+    }
+
+    function handleFile(input) {
+        if(!input.files.length) return;
+        const file = input.files[0];
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('type', currentType);
+
+        // UI Feedback
+        const card = document.getElementById(`doc-${currentType.toLowerCase()}`);
+        const badge = card.querySelector('.status-badge');
+        const originalText = badge.innerText;
+        badge.innerText = 'AI CHECKING...';
+        badge.style.background = 'var(--cyan)';
+        badge.style.color = '#fff';
+
+        fetch('/api/documents/check', {
+            method: 'POST',
+            body: formData
+        })
+        .then(r => r.json())
+        .then(data => {
+            if(data.ok && data.compliant) {
+                badge.innerText = 'VERIFIED';
+                badge.className = 'status-badge verified';
+                badge.title = data.reason;
+            } else {
+                badge.innerText = 'REJECTED';
+                badge.style.background = '#ef4444';
+                badge.title = data.reason || 'Document does not match requirement.';
+            }
+            updateCompliance();
+        })
+        .catch(err => {
+            badge.innerText = 'ERROR';
+            badge.style.background = '#666';
+        });
+    }
+
+    function updateCompliance() {
+        const total = document.querySelectorAll('.doc-card').length;
+        const verified = document.querySelectorAll('.status-badge.verified').length;
+        const pct = Math.round((verified / total) * 100);
+        document.getElementById('compliance-pct').innerText = pct + '%';
+    }
+    
+    // Initial calculation on load
+    window.addEventListener('DOMContentLoaded', updateCompliance);
+</script>
+{% endblock %}

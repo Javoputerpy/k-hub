@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+{% block content %}
+<div id="read-progress" style="position:fixed;top:0;left:0;height:4px;background:var(--cyan);width:0%;z-index:10000;transition:0.1s;box-shadow:0 0 10px var(--cyan-glow);"></div>
+<div class="topbar" style="padding:20px 40px;backdrop-filter:blur(10px);background:rgba(10,10,20,0.4);border-bottom:1px solid var(--border);">
+    <a href="/blog" style="text-decoration:none;color:var(--text-muted);font-weight:700;font-size:0.82rem;display:flex;align-items:center;gap:8px;">
+        <span style="font-size:1.2rem;">←</span> BLOG
+    </a>
+    <div style="font-size:0.8rem;opacity:0.6;font-weight:600;">{{ post.date }} · {{ post.views }} reads</div>
+</div>
+
+<div style="max-width:840px;margin:0 auto;padding:20px 40px 80px;">
+    <!-- Category & Title -->
+    <div style="margin-bottom:36px;">
+        <span style="background:var(--cyan-glow);color:var(--cyan);padding:5px 14px;border-radius:30px;font-size:0.7rem;font-weight:800;letter-spacing:1px;">{{ post.category|upper }}</span>
+        <h1 style="font-family:var(--font-heading);font-size:2.8rem;font-weight:900;margin:18px 0 12px;line-height:1.1;">{{ post.title }}</h1>
+        <div style="display:flex;align-items:center;gap:12px;opacity:0.6;font-size:0.85rem;">
+            <div style="width:36px;height:36px;background:var(--cyan);border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:0.9rem;flex-shrink:0;opacity:1;">{{ post.author[0]|upper }}</div>
+            <span><strong style="color:var(--text-main);opacity:1;">{{ post.user_name or post.author }}</strong> · {{ post.date }}</span>
+        </div>
+    </div>
+
+    <!-- Cover Image -->
+    {% if post.image_url %}
+    <div style="height:420px;background:url('{{ post.image_url }}') center/cover;border-radius:24px;margin-bottom:48px;"></div>
+    {% else %}
+    <div style="height:200px;background:linear-gradient(135deg,rgba(6,182,212,0.2) 0%,rgba(139,92,246,0.2) 100%);border-radius:24px;margin-bottom:48px;display:flex;align-items:center;justify-content:center;font-size:4rem;">
+        {% if post.category == 'Admission' %}🎓{% elif post.category == 'Research' %}🔬{% elif post.category == 'Life' %}🏡{% else %}💬{% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Content -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <div class="glass-panel markdown-body" id="post-content-body" style="padding:48px;border-radius:28px;font-size:1.05rem;line-height:1.9;margin-bottom:40px;">
+        <!-- Content will be rendered here -->
+        <textarea id="raw-content" style="display:none;">{{ post.content }}</textarea>
+    </div>
+
+    <style>
+    .markdown-body h1, .markdown-body h2, .markdown-body h3 { font-family:var(--font-heading); margin: 1.5em 0 0.8em; color:var(--text-main); line-height: 1.2; }
+    .markdown-body p { margin-bottom: 1.5rem; opacity: 0.9; }
+    .markdown-body blockquote { border-left: 5px solid var(--cyan); padding: 20px 30px; font-style: italic; opacity: 0.85; margin: 40px 0; background: rgba(6,182,212,0.03); border-radius: 0 20px 20px 0; border: 1px solid rgba(6,182,212,0.1); }
+    .markdown-body pre { background: rgba(0,0,0,0.5); padding: 25px; border-radius: 20px; margin: 30px 0; overflow-x: auto; border: 1px solid var(--border); box-shadow: 0 15px 40px rgba(0,0,0,0.2); }
+    .markdown-body code { font-family: 'Space Grotesk', monospace; font-size: 0.9rem; color: var(--cyan); background:rgba(6,182,212,0.1); padding: 2px 6px; border-radius:6px; }
+    .markdown-body img { max-width: 100%; border-radius: 24px; margin: 40px 0; box-shadow: 0 30px 60px rgba(0,0,0,0.5); border: 1px solid var(--border); }
+    .markdown-body ul, .markdown-body ol { margin-bottom: 1.5em; padding-left: 28px; }
+    .markdown-body li { margin-bottom: 0.8em; opacity: 0.9; }
+
+    /* Premium AI-Generated Classes */
+    .alert-info { background: rgba(6,182,212,0.05); border: 1px solid var(--cyan); padding: 25px; border-radius: 20px; margin: 30px 0; color: var(--text-main); }
+    .alert-warning { background: rgba(245,158,11,0.05); border: 1px solid #f59e0b; padding: 25px; border-radius: 20px; margin: 30px 0; }
+    .glass-card { background: rgba(255,255,255,0.03); border: 1px solid var(--border); padding: 30px; border-radius: 24px; margin: 30px 0; box-shadow: 0 20px 50px rgba(0,0,0,0.1); }
+    .text-gradient { background: linear-gradient(90deg, var(--cyan), #8b5cf6, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 900; }
+    .premium-list { list-style: none; padding-left: 0; }
+    .premium-list li { display:flex; align-items:center; gap:14px; margin-bottom:12px; }
+    .premium-list li::before { content: "✦"; color: var(--cyan); font-weight: 900; font-size:1.1rem; }
+    .drop-cap::first-letter { font-family: var(--font-heading); float: left; font-size: 5rem; line-height: 0.8; padding: 0 15px 0 0; color: var(--cyan); font-weight: 900; text-shadow: 0 0 20px var(--cyan-glow); }
+    </style>
+
+    <script>
+    window.onload = () => {
+        const raw = document.getElementById('raw-content').value;
+        const target = document.getElementById('post-content-body');
+        const isHtml = {{ post.get('is_html', 0) }};
+        if (isHtml) target.innerHTML = raw;
+        else target.innerHTML = marked.parse(raw);
+        
+        // Reading Progress
+        window.onscroll = () => {
+            const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+            const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            const scrolled = (winScroll / height) * 100;
+            document.getElementById("read-progress").style.width = scrolled + "%";
+        };
+    };
+    </script>
+
+    <!-- ── REACTION BAR ── -->
+    <div id="reaction-bar" class="glass-panel" style="padding:20px 30px;border-radius:100px;display:flex;align-items:center;gap:6px;margin-bottom:48px;flex-wrap:wrap;gap:10px;">
+        <span style="font-size:0.75rem;font-weight:700;opacity:0.5;margin-right:10px;">REACT:</span>
+        {% set reactions = post.reactions or {} %}
+        <button class="react-btn" data-type="like" onclick="sendReaction('like')" style="display:flex;align-items:center;gap:8px;padding:10px 20px;border-radius:50px;border:1px solid var(--border);background:var(--bg);cursor:pointer;font-size:0.9rem;transition:0.2s;font-weight:700;">
+            ❤️ <span id="count-like">{{ reactions.get('like', 0) }}</span>
+        </button>
+        <button class="react-btn" data-type="fire" onclick="sendReaction('fire')" style="display:flex;align-items:center;gap:8px;padding:10px 20px;border-radius:50px;border:1px solid var(--border);background:var(--bg);cursor:pointer;font-size:0.9rem;transition:0.2s;font-weight:700;">
+            🔥 <span id="count-fire">{{ reactions.get('fire', 0) }}</span>
+        </button>
+        <button class="react-btn" data-type="clap" onclick="sendReaction('clap')" style="display:flex;align-items:center;gap:8px;padding:10px 20px;border-radius:50px;border:1px solid var(--border);background:var(--bg);cursor:pointer;font-size:0.9rem;transition:0.2s;font-weight:700;">
+            👏 <span id="count-clap">{{ reactions.get('clap', 0) }}</span>
+        </button>
+        <button class="react-btn" data-type="wow" onclick="sendReaction('wow')" style="display:flex;align-items:center;gap:8px;padding:10px 20px;border-radius:50px;border:1px solid var(--border);background:var(--bg);cursor:pointer;font-size:0.9rem;transition:0.2s;font-weight:700;">
+            🤩 <span id="count-wow">{{ reactions.get('wow', 0) }}</span>
+        </button>
+        <button class="react-btn" data-type="insightful" onclick="sendReaction('insightful')" style="display:flex;align-items:center;gap:8px;padding:10px 20px;border-radius:50px;border:1px solid var(--border);background:var(--bg);cursor:pointer;font-size:0.9rem;transition:0.2s;font-weight:700;">
+            💡 <span id="count-insightful">{{ reactions.get('insightful', 0) }}</span>
+        </button>
+    </div>
+
+    <!-- ── COMMENTS SECTION ── -->
+    <div style="margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;">
+        <h3 style="font-family:var(--font-heading);font-size:1.4rem;font-weight:800;">
+            💬 Comments <span id="comment-count" style="background:var(--cyan);color:white;padding:2px 10px;border-radius:20px;font-size:0.75rem;margin-left:8px;">{{ post.comments|length }}</span>
+        </h3>
+    </div>
+
+    <!-- Comment Input -->
+    <div class="glass-panel" style="padding:24px;border-radius:20px;margin-bottom:30px;display:flex;gap:16px;align-items:flex-start;">
+        <div style="width:40px;height:40px;background:var(--cyan);border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:800;flex-shrink:0;">?</div>
+        <div style="flex:1;">
+            <textarea id="comment-input" rows="3" placeholder="Share your thoughts..." style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:14px;font-size:0.9rem;line-height:1.6;resize:none;outline:none;font-family:inherit;box-sizing:border-box;"></textarea>
+            <div style="display:flex;justify-content:flex-end;margin-top:10px;">
+                <button onclick="submitComment()" class="btn-primary" style="padding:10px 24px;border-radius:12px;font-size:0.82rem;font-weight:800;">POST COMMENT</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Comment List -->
+    <div id="comments-list" style="display:flex;flex-direction:column;gap:18px;">
+        {% for c in post.comments %}
+        <div class="comment-item glass-panel" style="display:flex;gap:16px;padding:22px;border-radius:20px;animation:fadeSlide 0.3s ease;">
+            <div style="width:40px;height:40px;background:linear-gradient(135deg,var(--cyan),rgba(139,92,246,0.8));border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:800;flex-shrink:0;">{{ c.user_name[0]|upper }}</div>
+            <div style="flex:1;">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:7px;">
+                    <strong style="font-size:0.9rem;">{{ c.user_name }}</strong>
+                    <span style="font-size:0.7rem;opacity:0.4;">{{ c.timestamp[:10] }}</span>
+                </div>
+                <p style="font-size:0.9rem;line-height:1.7;opacity:0.85;margin:0;">{{ c.text }}</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+.react-btn:hover { border-color:var(--cyan) !important; transform:scale(1.05); box-shadow:0 4px 15px var(--cyan-glow); }
+.react-btn.active { background:var(--cyan-glow) !important; border-color:var(--cyan) !important; }
+@keyframes fadeSlide { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+.comment-item { animation:fadeSlide 0.3s ease; }
+</style>
+
+<script>
+const POST_ID = {{ post.id }};
+
+async function sendReaction(type) {
+    try {
+        const res = await fetch('/api/blog/react', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({post_id: POST_ID, type})
+        });
+        const data = await res.json();
+        if (data.ok) {
+            // Update all counts
+            const types = ['like', 'fire', 'clap', 'wow', 'insightful'];
+            types.forEach(t => {
+                const el = document.getElementById(`count-${t}`);
+                if (el) el.innerText = data.reactions[t] || 0;
+            });
+            // Flash the button
+            const btn = document.querySelector(`.react-btn[data-type="${type}"]`);
+            if (btn) { btn.classList.add('active'); setTimeout(() => btn.classList.remove('active'), 800); }
+        } else { showNotification('Login to react to posts!'); }
+    } catch(e) { console.error(e); }
+}
+
+async function submitComment() {
+    const input = document.getElementById('comment-input');
+    const text = input.value.trim();
+    if (!text) return;
+
+    try {
+        const res = await fetch('/api/blog/comment', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({post_id: POST_ID, text})
+        });
+        const data = await res.json();
+        if (data.ok) {
+            input.value = '';
+            // Append comment to DOM
+            const initial = (data.author || 'You')[0].toUpperCase();
+            const el = document.createElement('div');
+            el.className = 'comment-item glass-panel';
+            el.style.cssText = 'display:flex;gap:16px;padding:22px;border-radius:20px;';
+            el.innerHTML = `
+                <div style="width:40px;height:40px;background:linear-gradient(135deg,var(--cyan),rgba(139,92,246,0.8));border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:800;flex-shrink:0;">${initial}</div>
+                <div style="flex:1;">
+                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:7px;">
+                        <strong style="font-size:0.9rem;">${data.author}</strong>
+                        <span style="font-size:0.7rem;opacity:0.4;">Just now</span>
+                    </div>
+                    <p style="font-size:0.9rem;line-height:1.7;opacity:0.85;margin:0;">${data.text}</p>
+                </div>`;
+            document.getElementById('comments-list').prepend(el);
+            // Update count
+            const cnt = document.getElementById('comment-count');
+            if (cnt) cnt.innerText = parseInt(cnt.innerText) + 1;
+            showNotification('Comment posted! ✅');
+        } else { showNotification(data.error || 'Login required to comment.'); }
+    } catch(e) { console.error(e); }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="padding:30px 40px 60px;max-width:1100px;margin:0 auto;">
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:40px;flex-wrap:wrap;gap:16px;">
+        <div style="display:flex;align-items:center;gap:20px;">
+            <a href="/courses" class="btn" style="padding:10px 15px;border-radius:12px;font-size:0.8rem;">← BACK</a>
+            <div>
+                <div style="font-size:0.7rem;font-weight:800;letter-spacing:2px;color:var(--cyan);margin-bottom:6px;">📚 MY VOCABULARY BANK</div>
+                <h1 style="font-family:var(--font-heading);font-size:2rem;font-weight:900;">{{ words|length }} words collected</h1>
+            </div>
+        </div>
+        <div class="glass-panel" style="padding:16px 24px;border-radius:20px;text-align:center;">
+            <div style="font-size:2rem;font-weight:900;color:{% if today_count >= 30 %}#10b981{% else %}#f59e0b{% endif %};">{{ today_count }}/30</div>
+            <div style="font-size:0.7rem;font-weight:700;opacity:0.5;">TODAY'S GOAL</div>
+        </div>
+    </div>
+
+    <!-- Add Words Panel -->
+    <div class="glass-panel" style="padding:32px;border-radius:24px;margin-bottom:40px;">
+        <h3 style="font-family:var(--font-heading);font-size:1.2rem;font-weight:800;margin-bottom:20px;">➕ Add New Words</h3>
+        <div style="display:grid;grid-template-columns:1fr auto;gap:16px;align-items:start;">
+            <div>
+                <label style="font-size:0.72rem;font-weight:800;opacity:0.6;display:block;margin-bottom:8px;">WORDS (comma or newline separated)</label>
+                <textarea id="vocab-input" rows="4" placeholder="e.g. paramount, endeavour, meticulous&#10;or paste text and I'll extract key words..."
+                    style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:14px;font-size:0.9rem;resize:none;outline:none;font-family:inherit;line-height:1.6;box-sizing:border-box;"></textarea>
+                <div style="font-size:0.75rem;opacity:0.4;margin-top:6px;">💡 Words added twice will show a warning · AI auto-translates to Uzbek & Russian</div>
+            </div>
+            <button onclick="addWords()" id="add-btn" class="btn-primary" style="padding:14px 22px;border-radius:14px;font-weight:800;white-space:nowrap;height:fit-content;margin-top:24px;">
+                ✅ ADD WORDS
+            </button>
+        </div>
+        <div id="add-result" style="margin-top:16px;"></div>
+    </div>
+
+    <!-- Word Grid -->
+    <div id="word-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;">
+        {% for w in words %}
+        <div class="word-card glass-panel" style="padding:20px;border-radius:18px;position:relative;{% if w.mastered %}border-color:rgba(16,185,129,0.4){% endif %}">
+            {% if w.mastered %}<div style="position:absolute;top:12px;right:12px;font-size:0.65rem;font-weight:800;color:#10b981;background:rgba(16,185,129,0.1);padding:3px 8px;border-radius:20px;">MASTERED</div>{% endif %}
+            <div style="font-family:var(--font-heading);font-size:1.2rem;font-weight:800;margin-bottom:6px;">{{ w.word }}</div>
+            <div style="font-size:0.82rem;color:var(--cyan);margin-bottom:8px;">{{ w.translation }}</div>
+            {% if w.context %}<div style="font-size:0.78rem;opacity:0.55;font-style:italic;line-height:1.5;margin-bottom:10px;">"{{ w.context }}"</div>{% endif %}
+            <div style="display:flex;align-items:center;justify-content:space-between;font-size:0.68rem;opacity:0.4;">
+                <span>{{ w.date_added }} · seen {{w.times_seen}}x</span>
+                {% if not w.mastered %}<button onclick="markMastered({{ w.id }})" style="background:transparent;border:1px solid var(--border);border-radius:8px;padding:3px 8px;cursor:pointer;color:var(--text-muted);font-size:0.68rem;">✓ mastered</button>{% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if not words %}
+    <div style="text-align:center;padding:80px;opacity:0.5;">
+        <div style="font-size:3rem;margin-bottom:12px;">📖</div>
+        <div>Start adding words from your daily texts or lessons!</div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.word-card:hover { transform: translateY(-4px); border-color: var(--cyan); }
+.word-card { transition: 0.2s; }
+</style>
+
+<script>
+async function addWords() {
+    const btn = document.getElementById('add-btn');
+    const text = document.getElementById('vocab-input').value.trim();
+    if (!text) return;
+    btn.innerText = '...';
+    
+    const res = await fetch('/api/vocab/add', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({words: text})
+    });
+    const data = await res.json();
+    btn.innerText = '✅ ADD WORDS';
+    
+    if (!data.ok) { showNotification('Login required to add words.'); return; }
+    
+    const resultEl = document.getElementById('add-result');
+    resultEl.innerHTML = '';
+    
+    let newCount = 0;
+    data.results.forEach(r => {
+        const div = document.createElement('div');
+        div.style.cssText = `display:flex;justify-content:space-between;padding:10px 14px;border-radius:10px;margin-bottom:6px;font-size:0.85rem;background:${r.status==='added'?'rgba(16,185,129,0.1)':'rgba(245,158,11,0.1)'};border:1px solid ${r.status==='added'?'rgba(16,185,129,0.3)':'rgba(245,158,11,0.3)'};`;
+        div.innerHTML = `<span><strong>${r.word}</strong> → ${r.translation}</span><span>${r.status==='added'?'✅ Added':'⚠️ Duplicate'}</span>`;
+        resultEl.appendChild(div);
+        if(r.status==='added') {
+            newCount++;
+            // Add to grid live
+            const card = document.createElement('div');
+            card.className = 'word-card glass-panel';
+            card.style.cssText = 'padding:20px;border-radius:18px;animation:fadeSlide 0.3s ease;';
+            card.innerHTML = `<div style="font-family:var(--font-heading);font-size:1.2rem;font-weight:800;margin-bottom:6px;">${r.word}</div><div style="font-size:0.82rem;color:var(--cyan);">${r.translation}</div>${r.example?`<div style="font-size:0.78rem;opacity:0.55;font-style:italic;margin-top:8px;">"${r.example}"</div>`:''}`;
+            document.getElementById('word-grid').prepend(card);
+        }
+    });
+    
+    document.getElementById('vocab-input').value = '';
+    showNotification(`${newCount} new word(s) added! Total today: ${data.today_count}/30`);
+}
+
+async function markMastered(wordId) {
+    await fetch('/api/vocab/mastered', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({vocab_id: wordId})
+    });
+    showNotification('Word marked as mastered! ✅');
+    location.reload();
+}
+</script>
+{% endblock %}

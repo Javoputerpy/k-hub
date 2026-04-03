@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="topbar">
+    <a href="/courses" style="text-decoration: none; color: var(--text-muted); font-weight: 700; font-size: 0.85rem;">← BACK TO COURSES</a>
+</div>
+
+<div class="content-area" style="padding: 40px; display: grid; grid-template-columns: 1fr 350px; gap: 40px;">
+    <!-- Lesson Content -->
+    <div>
+        <div style="margin-bottom: 30px;">
+            <span style="color: var(--cyan); font-weight: 800; font-size: 0.75rem; letter-spacing: 1px;">{{ course.category|upper }} / {{ course.title|upper }}</span>
+            <h1 style="font-family: var(--font-heading); font-size: 2.2rem; margin-top: 10px; font-weight: 800;">{{ lesson.title }}</h1>
+        </div>
+
+        <div class="video-container glass-panel" style="aspect-ratio: 16/9; background: #000; border-radius: 24px; margin-bottom: 30px; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative;">
+            <div style="text-align: center;">
+                <div style="font-size: 3rem; margin-bottom: 10px;">📺</div>
+                <div style="color: white; font-weight: 700; opacity: 0.5;">LECTURE VIDEO CONTENT</div>
+            </div>
+            <!-- If we had a real URL: <iframe src="{{ lesson.video_url }}"></iframe> -->
+        </div>
+
+        <div class="lesson-text glass-panel" style="padding: 40px; line-height: 1.8; font-size: 1.05rem;">
+            {{ lesson.content|safe }}
+            
+            <div style="margin-top: 40px; text-align: center;">
+                <button id="complete-btn" class="btn-primary" style="padding: 15px 40px; border-radius: 50px; font-weight: 800;" onclick="completeLesson()">MARK AS COMPLETED</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI TUTOR SIDEBAR -->
+    <div style="position: sticky; top: 40px; height: calc(100vh - 120px); display: flex; flex-direction: column;">
+        <div class="glass-panel" style="flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 0; border: 1px solid var(--cyan-glow);">
+            <div style="background: var(--cyan); color: white; padding: 15px 20px; display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 1.2rem;">🤖</span>
+                <div style="font-weight: 800; font-size: 0.85rem;">{{ t.ai_tutor }}</div>
+            </div>
+            
+            <div id="chat-messages" style="flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; background: rgba(255,255,255,0.02);">
+                <div class="msg ai" style="background: rgba(37, 99, 235, 0.1); padding: 12px 16px; border-radius: 16px 16px 16px 4px; font-size: 0.85rem; max-width: 90%; align-self: flex-start; border: 1px solid var(--cyan-glow);">
+                   Hello! I'm your AI Language Tutor for this lesson. How can I help you practice today?
+                </div>
+            </div>
+
+            <div style="padding: 15px; border-top: 1px solid var(--border); background: var(--panel);">
+                <div style="display: flex; gap: 10px; background: var(--bg); padding: 5px 15px; border-radius: 50px; border: 1px solid var(--border);">
+                    <input id="chat-input" type="text" placeholder="{{ t.lesson_chat }}" style="flex: 1; border: none; background: transparent; font-size: 0.8rem; padding: 8px 0; outline: none;">
+                    <button onclick="sendChat()" style="background: transparent; border: none; cursor: pointer; font-size: 1rem;">🚀</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const lessonId = {{ lesson.id }};
+    
+    function appendMsg(text, type) {
+        const div = document.createElement('div');
+        div.className = `msg ${type}`;
+        div.style.cssText = type === 'user' 
+            ? 'background: var(--cyan); color: white; padding: 10px 16px; border-radius: 16px 16px 4px 16px; font-size: 0.85rem; max-width: 90%; align-self: flex-end;'
+            : 'background: rgba(37, 99, 235, 0.1); padding: 10px 16px; border-radius: 16px 16px 16px 4px; font-size: 0.85rem; max-width: 90%; align-self: flex-start; border: 1px solid var(--cyan-glow);';
+        div.innerText = text;
+        const container = document.getElementById('chat-messages');
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    async function sendChat() {
+        const input = document.getElementById('chat-input');
+        const text = input.value.trim();
+        if (!text) return;
+        
+        appendMsg(text, 'user');
+        input.value = '';
+        
+        try {
+            const res = await fetch('/api/lesson/chat', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({lesson_id: lessonId, message: text})
+            });
+            const data = await res.json();
+            if (data.ok) appendMsg(data.response, 'ai');
+        } catch(e) { appendMsg('Connection error...', 'ai'); }
+    }
+
+    async function completeLesson() {
+        try {
+            const res = await fetch('/api/lesson/complete', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({lesson_id: lessonId})
+            });
+            const data = await res.json();
+            if (data.ok) {
+                document.getElementById('complete-btn').innerText = '✓ COMPLETED';
+                document.getElementById('complete-btn').disabled = true;
+                showNotification('Lesson completed! XP added.');
+            }
+        } catch(e) { console.error(e); }
+    }
+
+    document.getElementById('chat-input').onkeydown = (e) => { if(e.key==='Enter') sendChat()};
+</script>
+{% endblock %}

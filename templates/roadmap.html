@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block page_title %}{{ t.tab_roadmap }}{% endblock %}
+{% block content %}
+<div style="display: grid; grid-template-columns: 1fr 2fr; gap: 40px; align-items: start;">
+    <!-- LEFT: Info -->
+    <div class="glass-container" style="padding: 40px; border-radius: 32px;">
+        <h3 style="margin-top: 0;">📍 {{ t.road_title }}</h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 30px;">
+            {{ t.road_desc }}
+        </p>
+        
+        <!-- Toggle -->
+        <div style="display: flex; gap: 10px; margin-bottom: 30px;">
+            <button class="btn secondary" id="btn-official" style="flex: 1; border-color: var(--cyan);" onclick="switchMode('official')">Official</button>
+            <button class="btn secondary" id="btn-personal" style="flex: 1;" onclick="switchMode('personal')">Personal</button>
+        </div>
+
+        <div style="background: rgba(37,99,235,0.05); padding: 25px; border-radius: 20px; border: 1px solid rgba(37,99,235,0.1); margin-bottom: 20px;">
+            <div style="font-size: 0.65rem; font-weight: 900; color: var(--cyan); letter-spacing: 1px; margin-bottom: 10px;">JOURNEY PROGRESS</div>
+            <div style="font-size: 2rem; font-weight: 800; color: var(--text-main);" id="roadmap-perc">0%</div>
+            <div style="height: 4px; background: rgba(0,0,0,0.05); border-radius: 10px; margin-top: 15px; overflow: hidden;">
+                <div id="roadmap-bar" style="width: 0%; height: 100%; background: var(--cyan); transition: 1.5s cubic-bezier(0.4, 0, 0.2, 1);"></div>
+            </div>
+        </div>
+
+        <div id="personal-controls" style="display: none; background: rgba(255,255,255,0.5); padding: 25px; border-radius: 20px; border: 1px solid var(--border);">
+            <div style="font-size: 0.75rem; font-weight: 800; margin-bottom: 15px;">ADD MILESTONE</div>
+            <input type="text" id="new-milestone" class="form-input" placeholder="e.g., Book IELTS Exam" style="margin-bottom: 10px;">
+            <input type="date" id="new-milestone-date" class="form-input" style="margin-bottom: 10px;">
+            <button class="btn primary w-100" onclick="addMilestone()">ADD TO ROADMAP</button>
+        </div>
+    </div>
+
+    <!-- RIGHT: Neon Path -->
+    <div class="glass-container" style="padding: 40px; border-radius: 32px;">
+        <div id="roadmap-content" style="position: relative; padding-left: 40px;">
+            <div style="position: absolute; left: 15px; top: 10px; bottom: 10px; width: 2px; background: linear-gradient(180deg, var(--cyan), transparent); opacity: 0.3;"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let mode = 'official';
+    const t_done = "{{ t.mile_done }}";
+    const t_prog = "{{ t.mile_prog }}";
+
+    function switchMode(m) {
+        mode = m;
+        document.getElementById('btn-official').style.borderColor = m==='official' ? 'var(--cyan)' : 'transparent';
+        document.getElementById('btn-personal').style.borderColor = m==='personal' ? 'var(--cyan)' : 'transparent';
+        document.getElementById('personal-controls').style.display = m==='personal' ? 'block' : 'none';
+        loadRoadmap();
+    }
+
+    function loadRoadmap() {
+        const rc = document.getElementById('roadmap-content');
+        rc.innerHTML = '<div style="position: absolute; left: 15px; top: 10px; bottom: 10px; width: 2px; background: linear-gradient(180deg, var(--cyan), transparent); opacity: 0.3;"></div>';
+        
+        if(mode === 'official') {
+            fetch('/api/roadmap').then(r=>r.json()).then(data => {
+                renderItems(data.items || data);
+            });
+        } else {
+            fetch('/api/roadmap/personal').then(r=>r.json()).then(data => {
+                renderItems(data);
+            });
+        }
+    }
+
+    function renderItems(items) {
+        const perc = document.getElementById('roadmap-perc');
+        const bar = document.getElementById('roadmap-bar');
+        const rc = document.getElementById('roadmap-content');
+        
+        // Ensure items is an array
+        items = Array.isArray(items) ? items : Object.keys(items).map(k => items[k]);
+        
+        let doneCount = items.filter(i=>i.done).length;
+        let total = items.length || 1;
+        let p = Math.round((doneCount/total)*100);
+        
+        if(items.length === 0) p = 0;
+        
+        perc.innerText = p + '%';
+        bar.style.width = p + '%';
+
+        rc.innerHTML += items.map((i, idx) => `
+            <div style="position: relative; margin-bottom: 40px; opacity: ${i.done ? 1 : (mode==='personal' ? 1 : 0.5)}; transition: 0.5s ${idx * 0.1}s;">
+                <div style="position: absolute; left: -32.5px; top: 5px; width: 15px; height: 15px; border-radius: 50%; background: ${i.done ? 'var(--cyan)' : 'var(--border)'}; box-shadow: ${i.done ? '0 0 15px var(--cyan)' : 'none'}; border: 3px solid var(--bg); cursor: ${mode==='personal'?'pointer':'default'};"></div>
+                
+                <div style="display:flex; justify-content: space-between; align-items:flex-start;">
+                    <div>
+                        <div style="font-weight: 800; font-size: 0.9rem; color: var(--text-main); margin-bottom: 5px;">${i.title.toUpperCase()}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">${i.done ? t_done : t_prog} ${i.date ? '• ' + i.date : ''}</div>
+                    </div>
+                    ${mode === 'personal' ? `<button onclick="deleteMilestone(${i.id})" style="background:rgba(239, 68, 68, 0.1); border:1px solid rgba(239, 68, 68, 0.2); border-radius: 8px; color:var(--red); padding: 5px 10px; cursor:pointer; font-size: 0.7rem; font-weight:800;">DELETE</button>` : ''}
+                </div>
+            </div>
+        `).join('');
+        
+        if(mode === 'personal' && items.length === 0) {
+            rc.innerHTML += `<div style="text-align:center; padding: 20px; color: var(--text-muted); font-size: 0.85rem;">No personal milestones yet. Add one!</div>`;
+        }
+    }
+
+    function addMilestone() {
+        const title = document.getElementById('new-milestone').value;
+        const date = document.getElementById('new-milestone-date').value;
+        if(!title) return;
+        fetch('/api/roadmap/personal', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({title, date})
+        }).then(()=> {
+            document.getElementById('new-milestone').value = '';
+            document.getElementById('new-milestone-date').value = '';
+            loadRoadmap();
+        });
+    }
+
+    function deleteMilestone(id) {
+        fetch('/api/roadmap/personal', {
+            method: 'DELETE',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({id})
+        }).then(()=> loadRoadmap());
+    }
+
+    document.addEventListener('DOMContentLoaded', loadRoadmap);
+</script>
+{% endblock %}

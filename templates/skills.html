@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% block page_title %}{{ t.tab_skills }}{% endblock %}
+{% block content %}
+<div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 30px;">
+    <!-- HERO: Welcome & Progress -->
+    <div class="glass-container" style="padding: 0; border-radius: 40px; overflow: hidden; background: linear-gradient(135deg, rgba(37,99,235,0.05), rgba(0,0,0,0.4)); display: grid; grid-template-columns: 1.2fr 1fr; border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 40px 80px rgba(0,0,0,0.5);">
+        <div style="padding: 50px; position: relative; z-index: 2; display: flex; flex-direction: column; justify-content: center;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; opacity: 0.8;">
+                <div style="width: 30px; height: 2px; background: var(--cyan);"></div>
+                <span style="font-size: 0.7rem; font-weight: 900; letter-spacing: 2px; text-transform: uppercase;">Aspiration Hub</span>
+            </div>
+            <h1 style="font-size: 2.8rem; font-weight: 900; margin-bottom: 15px; line-height: 1; letter-spacing: -1.5px;">{{ t.dash_welcome }}, <span id="dash-user-name" style="color: var(--cyan);">...</span>!</h1>
+            <p style="color: var(--text-muted); margin-bottom: 35px; line-height: 1.6; font-size: 1.05rem;">{{ t.dash_desc }}</p>
+            
+            <div style="max-width: 100%;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-weight: 900; font-size: 0.75rem; letter-spacing: 1px;">
+                    <span style="color: var(--cyan);">LEVEL <span id="dash-level">1</span></span>
+                    <span style="opacity: 0.6;"><span id="dash-xp">0</span> / 10000 XP</span>
+                </div>
+                <div style="height: 14px; background: rgba(255,255,255,0.03); border-radius: 20px; overflow: hidden; border: 1px solid rgba(255,255,255,0.06); padding: 2px;">
+                    <div id="dash-xp-bar" style="width: 0%; height: 100%; border-radius: 20px; background: linear-gradient(90deg, var(--cyan), #8b5cf6); box-shadow: 0 0 15px var(--cyan-glow); transition: 1.5s cubic-bezier(0.2, 0.8, 0.2, 1);"></div>
+                </div>
+            </div>
+        </div>
+        <div style="position: relative; background: url('/static/images/hero_3d.png') center/cover; overflow: hidden;">
+            <div style="position: absolute; inset: 0; background: linear-gradient(to right, rgba(0,0,0,0.4), transparent);"></div>
+            <!-- Floating Overlay Light -->
+            <div style="position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(6, 182, 212, 0.1) 0%, transparent 70%); animation: slow-orbit 20s infinite linear;"></div>
+        </div>
+    </div>
+
+    <style>
+        @keyframes slow-orbit {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+
+    <!-- AI ADVISOR -->
+    <div class="glass-container" style="padding: 30px; border-radius: 32px; border: 1px solid rgba(0,240,255,0.2); background: rgba(0,240,255,0.02);">
+        <h3 style="font-size: 1rem; margin-bottom: 15px;">🤖 {{ t.dash_advisor }}</h3>
+        <div id="ai-tip-box" style="padding: 20px; background: rgba(0,0,0,0.02); border-radius: 20px; border: 1px solid var(--border);">
+            <p id="ai-tip-text" style="font-size: 0.85rem; line-height: 1.6; font-style: italic; color: var(--text-main);">
+                {{ t.dash_tip }} ...
+            </p>
+        </div>
+        <div style="margin-top: 15px; display: flex; gap: 10px;">
+            <span class="badge" style="background: rgba(16,185,129,0.1); color: #10b981; border: none;">ONLINE</span>
+            <span style="font-size: 0.7rem; color: var(--text-muted);">v2.4 GPT-4o Optimized</span>
+        </div>
+    </div>
+</div>
+
+<!-- QUICK ACTIONS -->
+<div style="margin-top: 30px;">
+    <h3 style="font-size: 0.9rem; margin-bottom: 20px; color: var(--text-muted); letter-spacing: 1px;">{{ t.dash_quick|upper }}</h3>
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;">
+        <a href="/sop" class="glass-container" style="padding: 20px; border-radius: 24px; text-decoration: none; text-align: center; transition: 0.3s; border: 1px solid transparent;">
+            <div style="font-size: 1.5rem; margin-bottom: 10px;">✍️</div>
+            <div style="font-weight: 700; font-size: 0.8rem;">SOP LAB</div>
+        </a>
+        <a href="/interview" class="glass-container" style="padding: 20px; border-radius: 24px; text-decoration: none; text-align: center; transition: 0.3s; border: 1px solid transparent;">
+            <div style="font-size: 1.5rem; margin-bottom: 10px;">🎤</div>
+            <div style="font-weight: 700; font-size: 0.8rem;">INTERVIEW</div>
+        </a>
+        <a href="/predictor" class="glass-container" style="padding: 20px; border-radius: 24px; text-decoration: none; text-align: center; transition: 0.3s; border: 1px solid transparent;">
+            <div style="font-size: 1.5rem; margin-bottom: 10px;">🎯</div>
+            <div style="font-weight: 700; font-size: 0.8rem;">PREDICTOR</div>
+        </a>
+        <a href="/documents" class="glass-container" style="padding: 20px; border-radius: 24px; text-decoration: none; text-align: center; transition: 0.3s; border: 1px solid transparent;">
+            <div style="font-size: 1.5rem; margin-bottom: 10px;">📜</div>
+            <div style="font-weight: 700; font-size: 0.8rem;">DOCS</div>
+        </a>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 30px;">
+    <!-- CHECKLIST -->
+    <div class="glass-container" style="padding: 30px; border-radius: 32px;">
+        <h3 style="margin-bottom: 20px;">✅ {{ t.dash_checklist }}</h3>
+        <div id="dash-checklist" style="display: flex; flex-direction: column; gap: 15px;">
+            <div class="check-item" data-key="Passport" style="display: flex; align-items: center; gap: 12px; opacity: 0.5;">
+                <div class="dot" style="width: 10px; height: 10px; border-radius: 50%; background: var(--border);"></div>
+                <span style="font-size: 0.9rem;">Passport Identity</span>
+            </div>
+            <div class="check-item" data-key="Transcript" style="display: flex; align-items: center; gap: 12px; opacity: 0.5;">
+                <div class="dot" style="width: 10px; height: 10px; border-radius: 50%; background: var(--border);"></div>
+                <span style="font-size: 0.9rem;">Academic Transcript</span>
+            </div>
+            <div class="check-item" data-key="SOP" style="display: flex; align-items: center; gap: 12px; opacity: 0.5;">
+                <div class="dot" style="width: 10px; height: 10px; border-radius: 50%; background: var(--border);"></div>
+                <span style="font-size: 0.9rem;">Statement of Purpose</span>
+            </div>
+            <div class="check-item" data-key="Recommendation" style="display: flex; align-items: center; gap: 12px; opacity: 0.5;">
+                <div class="dot" style="width: 10px; height: 10px; border-radius: 50%; background: var(--border);"></div>
+                <span style="font-size: 0.9rem;">Recommendation Letters</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- QUICK STATS -->
+    <div class="glass-container" style="padding: 30px; border-radius: 32px;">
+        <h3 style="margin-bottom: 20px;">📊 {{ t.dash_stat }}</h3>
+        <div style="display: flex; flex-direction: column; gap: 15px;">
+            <div style="display: flex; justify-content: space-between; padding: 12px; background: rgba(0,0,0,0.02); border-radius: 12px;">
+                <span style="font-size: 0.8rem; color: var(--text-muted);">{{ t.st_gpa }}</span>
+                <span id="dash-gpa" style="font-weight: 800; color: var(--cyan);">-</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 12px; background: rgba(0,0,0,0.02); border-radius: 12px;">
+                <span style="font-size: 0.8rem; color: var(--text-muted);">{{ t.st_ielts }}</span>
+                <span id="dash-ielts" style="font-weight: 800; color: var(--cyan);">-</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 12px; background: rgba(0,0,0,0.02); border-radius: 12px;">
+                <span style="font-size: 0.8rem; color: var(--text-muted);">{{ t.st_research }}</span>
+                <span id="dash-research" style="font-weight: 800; color: var(--cyan);">0</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    window.addEventListener('DOMContentLoaded', () => {
+        // We use fetch for fresh data or session-injected data
+        fetch('/api/me').then(r=>r.json()).then(data => {
+            if(!data.ok) return;
+            const u = data.user;
+            document.getElementById('dash-user-name').innerText = u.name.split(' ')[0];
+            document.getElementById('dash-level').innerText = u.level || 1;
+            document.getElementById('dash-xp').innerText = u.xp || 0;
+            document.getElementById('dash-xp-bar').style.width = ((u.xp || 0) / 10000 * 100) + '%';
+            document.getElementById('dash-gpa').innerText = u.gpa || '-';
+            document.getElementById('dash-ielts').innerText = u.estimated_band ? u.estimated_band + " (Est)" : (u.ielts || '-');
+            document.getElementById('dash-research').innerText = u.research || '0';
+
+            // Tips logic
+            const tips = [
+                "{{ t.dash_passport_warn }}",
+                "{{ t.dash_sop_ready }}",
+                "Focus on your research output to gain more XP.",
+                "KAIST loves interdisciplinary projects. Link your CS skills to Biology!"
+            ];
+            document.getElementById('ai-tip-text').innerText = "{{ t.dash_tip }} " + tips[Math.floor(Math.random() * tips.length)];
+
+            // Checklist sync
+            const docs = data.docs_dict || {};
+            document.querySelectorAll('.check-item').forEach(item => {
+                const key = item.getAttribute('data-key');
+                if (docs[key] && docs[key].checked === 1) {
+                    item.style.opacity = "1";
+                    item.querySelector('.dot').style.background = "#10b981";
+                    item.querySelector('.dot').style.boxShadow = "0 0 10px #10b981";
+                    item.querySelector('span').style.textDecoration = "line-through";
+                    item.querySelector('span').style.color = "var(--text-muted)";
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

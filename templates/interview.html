@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block page_title %}{{ t.tab_interview }}{% endblock %}
+{% block content %}
+<div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 30px; align-items: start;">
+    <!-- LEFT: Prep Toolkit -->
+    <div style="display: flex; flex-direction: column; gap: 30px;">
+        <div class="glass-container" style="padding: 30px; border-radius: 32px; text-align: center;">
+            <img src="/C:/Users/user/.gemini/antigravity/brain/8cf7075d-ad04-40c0-b001-4c9c49e439d0/interview_prep_illustration_v10_0_1775068156415.png" style="width: 100%; border-radius: 20px; margin-bottom: 20px;">
+            <h4 style="margin-bottom: 15px;">{{ t.int_prep }}</h4>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div style="background:rgba(16,185,129,0.05); padding:10px; border-radius:12px; border:1px solid rgba(16,185,129,0.1);">
+                    <div style="font-size:0.6rem; font-weight:900; color:#10b981;">DO</div>
+                    <div style="font-size:0.65rem; margin-top:4px;">Be specific about KAIST labs.</div>
+                </div>
+                <div style="background:rgba(244,63,94,0.05); padding:10px; border-radius:12px; border:1px solid rgba(244,63,94,0.1);">
+                    <div style="font-size:0.6rem; font-weight:900; color:#f43f5e;">DON'T</div>
+                    <div style="font-size:0.65rem; margin-top:4px;">Give generic answers.</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass-container" style="padding: 30px; border-radius: 32px;">
+            <h4 style="margin-top: 0; margin-bottom: 20px;">🔥 {{ t.int_tips }}</h4>
+            <ul style="padding-left: 20px; font-size: 0.75rem; color: var(--text-muted); line-height: 1.6;">
+                <li>Connect your research to the <strong>IVY Foundation</strong> goals.</li>
+                <li>Explain how you solve the <strong>Caring</strong> value through engineering.</li>
+                <li>Practice the feedback meticulously.</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- RIGHT: AI Interviewer -->
+    <div class="glass-container" style="padding: 40px; border-radius: 32px; text-align: center;">
+        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 30px;">
+            <div style="width: 12px; height: 12px; background: var(--cyan); border-radius: 50%; box-shadow: 0 0 10px var(--cyan); animation: pulse 2s infinite;"></div>
+            <h3 style="margin: 0;">🎤 {{ t.int_sim }}</h3>
+        </div>
+        
+        <div id="int-q" style="background: rgba(0,0,0,0.02); padding: 30px; border: 1px solid var(--border); border-radius: 20px; font-size: 1.2rem; color: var(--text-main); line-height: 1.5; margin-bottom: 25px;">
+            Connecting...
+        </div>
+
+        <div style="position:relative;">
+            <textarea id="int-ans" style="width: 100%; height: 200px; padding: 20px; border-radius: 20px; background: rgba(0,0,0,0.02); border: 1px solid var(--border); color: var(--text-main); font-family: inherit; resize: none; outline: none; transition: 0.3s; padding-bottom: 60px;" placeholder="{{ t.int_placeholder }}"></textarea>
+            <button id="mic-btn" style="position:absolute; bottom:20px; right:20px; width:44px; height:44px; border-radius:50%; border:none; background:rgba(37,99,235,0.1); color:var(--cyan); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:0.3s;">
+                <span id="mic-icon" style="font-size:1.2rem;">🎤</span>
+            </button>
+        </div>
+        
+        <button class="btn primary" id="int-submit" style="width: 100%; margin-top: 20px; padding: 16px; font-weight: 800; display:flex; align-items:center; justify-content:center; gap:10px;">
+            <span id="submit-text">{{ t.int_submit }}</span>
+        </button>
+
+        <div id="int-feedback" style="margin-top: 30px; text-align: left;"></div>
+    </div>
+</div>
+
+<style>
+    @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.5); opacity: 0.5; } 100% { transform: scale(1); opacity: 1; } }
+    #int-ans:focus { border-color: var(--cyan); background: rgba(0,0,0,0.05); }
+</style>
+<script>
+    window.addEventListener('DOMContentLoaded', () => {
+        let currentQ = "";
+        fetch('/api/interview/question?lang=en').then(r=>r.json()).then(d=>{
+            currentQ = d.question;
+            const qEl = document.getElementById('int-q');
+            if(qEl) qEl.innerText = currentQ;
+        }).catch(e => console.error(e));
+        
+        // Voice Integration
+        const micBtn = document.getElementById('mic-btn');
+        const micIcon = document.getElementById('mic-icon');
+        const ansArea = document.getElementById('int-ans');
+        let recognition = null;
+        let isRecording = false;
+
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = 'en-US';
+
+            recognition.onresult = (event) => {
+                let finalTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) finalTranscript += event.results[i][0].transcript;
+                }
+                if(finalTranscript) ansArea.value += (ansArea.value ? ' ' : '') + finalTranscript;
+            };
+
+            recognition.onend = () => {
+                isRecording = false;
+                micBtn.style.background = 'rgba(37,99,235,0.1)';
+                micIcon.innerText = '🎤';
+            };
+
+            micBtn.addEventListener('click', () => {
+                if (isRecording) {
+                    recognition.stop();
+                } else {
+                    recognition.start();
+                    isRecording = true;
+                    micBtn.style.background = 'rgba(244,63,94,0.2)';
+                    micIcon.innerText = '🛑';
+                }
+            });
+        } else {
+            micBtn.style.display = 'none';
+        }
+
+        const btn = document.getElementById('int-submit');
+        const subText = document.getElementById('submit-text');
+        if(btn) btn.addEventListener('click', async () => {
+            const ans = document.getElementById('int-ans').value;
+            if(!ans) return alert("Write or speak your answer first!");
+            
+            subText.innerText = "Analyzing...";
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/interview/analyze', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({question:currentQ, answer:ans}) });
+                const data = await res.json();
+                document.getElementById('int-feedback').innerHTML = `
+                    <div class="glass-container" style="padding:24px; margin-top:20px; border-color:var(--cyan); animation: slideUp 0.5s;">
+                        <h4 style="margin:0 0 15px 0; color:var(--cyan);">PRO-FEEDBACK</h4>
+                        <p style="font-size:0.85rem; color:var(--text-muted); line-height:1.7;">${(data.analysis||'').replace(/\n/g, '<br>')}</p>
+                    </div>`;
+            } catch(e) { console.error(e); }
+            finally {
+                subText.innerText = "SUBMIT FOR ANALYSIS";
+                btn.disabled = false;
+            }
+        });
+    });
+</script>
+{% endblock %}

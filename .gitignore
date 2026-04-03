@@ -1,0 +1,47 @@
+# ── DATABASE ──
+*.db
+*.sqlite3
+
+# ── ENVIRONMENT & KEYS ──
+.env
+.flaskenv
+*.key
+*.pem
+
+# ── LOGS & UPLOADS ──
+*.log
+static/uploads/*
+!static/uploads/.gitkeep
+
+# ── PYTHON ──
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.venv/
+.env/
+
+# ── GEMINI / AGENT ──
+.gemini/
+brain/
+.agents/
+.agent/
+_agents/
+_agent/
+*.md
+!README.md
+!requirements.txt
+!Procfile
+!app.py
+!database.py
+
+# ── MISC ──
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
