@@ -3,3 +3,5 @@ gunicorn
 openai
 requests
 python-dotenv
+gtts
+pypdf
