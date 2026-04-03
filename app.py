@@ -1,9 +1,16 @@
-import os, sys, threading, uuid, datetime, json, requests, time
+import os, sys, threading, uuid, datetime, json, requests, time, subprocess
 from flask import Flask, render_template, request, session, redirect, jsonify, send_file
 from dotenv import load_dotenv
 import database as db
 
 load_dotenv()
+
+# ── BOT INTEGRATION (Run Bot along with Web) ──
+if os.environ.get('START_BOT', 'true').lower() == 'true':
+    # We use a simple check to avoid starting the bot multiple times in dev mode
+    if not os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
+        print("🚀 Launching Telegram Bot...")
+        subprocess.Popen([sys.executable, "bot.py"])
 
 # Safe encoding for Windows
 if sys.stdout.encoding != 'utf-8':
